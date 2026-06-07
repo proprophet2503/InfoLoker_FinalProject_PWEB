@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detail Lowongan — InfoLoker</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo-mark">
+      <span class="logo-dot"></span>
+      InfoLoker
+    </a>
+    <div class="nav-links">
+      <a href="listings.html">Lowongan</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-bar">
+  <div class="breadcrumb">
+    <a href="index.html">Beranda</a>
+    <span>›</span>
+    <a href="listings.html">Lowongan</a>
+    <span>›</span>
+    <span id="bc-title">Detail</span>
+  </div>
+  <a href="listings.html" class="back-btn">← Kembali ke Daftar</a>
+</div>
+
+<div id="content-area">
+  <div class="not-found" id="loading-state">
+    <p style="color:var(--muted)">Memuat detail lowongan...</p>
+  </div>
+</div>
+
+<script src="./shared.js"></script>
+<script>
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const id = parseInt(params.get('id'));
+
+  if (!id) { showNotFound('ID lowongan tidak ditemukan.'); return; }
+
+  let jobs;
+  try {
+    jobs = await fetchJobs();
+  } catch(_) {
+    showNotFound('Gagal memuat data. Pastikan server lokal aktif.');
+    return;
+  }
+
+  const job = jobs.find(j => j.id === id);
+  if (!job) { showNotFound('Lowongan tidak ditemukan.'); return; }
+
+  document.title = `${job.title} di ${job.company} — InfoLoker`;
+  document.getElementById('bc-title').textContent = job.title;
+
+  const related = shuffle(
+    jobs.filter(j => j.category === job.category && j.id !== job.id)
+  ).slice(0, 4);
+
+  const companyJobs = jobs.filter(j => j.company === job.company);
+
+  document.getElementById('content-area').innerHTML = `
+    <div class="detail-shell">
+      <div class="detail-main">
+        <div class="job-header">
+          <div class="jh-top">
+            ${logoImg(job.company,'jh-logo','jh-logo-fb')}
+            <div style="flex:1">
+              <p class="jh-company">${esc(job.company)}</p>
+              <h1 class="jh-title">${esc(job.title)}</h1>
+              <p class="jh-salary">${esc(job.salary)}</p>
+            </div>
+          </div>
+          <div class="badge-row">
+            <span class="badge"> ${esc(job.location)}</span>
+            <span class="badge blue">${esc(job.type)}</span>
+            <span class="badge">${esc(job.category)}</span>
+            <span class="badge">${daysAgo(job.posted_date)}</span>
+          </div>
+          <div class="jh-actions">
+            <a href="apply.html?id=${job.id}" class="btn-apply-big">Lamar Sekarang →</a>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h2>Deskripsi Pekerjaan</h2>
+          <p>${esc(job.description)}</p>
+          <br>
+          <p style="color:var(--text);font-size:.88rem">
+            Bergabunglah bersama tim <strong>${esc(job.company)}</strong> dan jadilah bagian
+            dari pertumbuhan perusahaan yang dinamis. Posisi ini menawarkan kesempatan
+            berkembang dalam lingkungan kerja yang inovatif dan kolaboratif.
+          </p>
+        </div>
+
+        <div class="content-section" style="animation-delay:.08s">
+          <h2>Kualifikasi &amp; Persyaratan</h2>
+          <ul class="req-list">
+            ${(Array.isArray(job.requirements) ? job.requirements : []).map(r => `<li>${esc(r)}</li>`).join('')}
+            <li>Mampu bekerja dalam tim maupun secara mandiri</li>
+            <li>Bersedia belajar dan mengembangkan diri</li>
+          </ul>
+        </div>
+
+        <div class="content-section" style="animation-delay:.14s">
+          <h2>Informasi Tambahan</h2>
+          <div class="info-grid">
+            ${[
+              [' Lokasi', job.location],
+              ['Tipe', job.type],
+              ['Kategori', job.category],
+              ['Diposting', fmtDateLong(job.posted_date)],
+              ['Gaji', job.salary],
+              ['Perusahaan', job.company]
+            ].map(([k,v]) => `
+              <div class="info-cell">
+                <p>${k}</p>
+                <p>${esc(v)}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <aside class="detail-sidebar">
+        <div class="company-card">
+          <h3>Tentang Perusahaan</h3>
+          <div class="cc-header">
+            ${logoImg(job.company,'cc-logo','cc-logo-fb')}
+            <div>
+              <div class="cc-name">${esc(job.company)}</div>
+              <div class="cc-subtitle">${esc(job.category)} &amp; lebih</div>
+            </div>
+          </div>
+          <div class="cc-stat-row">
+            <div class="cc-stat">
+              <strong>${companyJobs.length}</strong>
+              <span>Lowongan</span>
+            </div>
+            <div class="cc-stat">
+              <strong>${new Set(companyJobs.map(j=>j.location)).size}</strong>
+              <span>Kota</span>
+            </div>
+          </div>
+          <a href="listings.html?company=${encodeURIComponent(job.company)}" class="btn-view-company">
+            Lihat Semua Lowongan →
+          </a>
+        </div>
+      </aside>
+    </div>
+  `;
+}
+
+function showNotFound(msg) {
+  document.getElementById('content-area').innerHTML = `
+    <div class="not-found">
+      <div style="font-size:3rem;margin-bottom:16px">🔍</div>
+      <h2>Lowongan Tidak Ditemukan</h2>
+      <p>${esc(msg)}</p>
+      <a href="listings.html">← Kembali ke Daftar Lowongan</a>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InfoLoker — Portal Lowongan Kerja Indonesia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo-mark">
+      <span class="logo-dot"></span>
+      InfoLoker
+    </a>
+    <div class="nav-links">
+      <a href="listings.html">Lowongan</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <section class="hero">
+    <h1>Karir Impianmu<br><span class="hl">Dimulai di Sini</span></h1>
+    <p>Ribuan lowongan kerja dari perusahaan terbaik Indonesia. Temukan peluangmu sekarang juga.</p>
+    <div class="hero-search">
+      <input type="text" id="hero-q" placeholder="Cari posisi, perusahaan, atau kategori...">
+      <button onclick="goSearch()">Cari Sekarang →</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><strong id="s-jobs">—</strong><span>Lowongan Aktif</span></div>
+      <div class="stat-card"><strong id="s-companies">—</strong><span>Perusahaan</span></div>
+      <div class="stat-card"><strong id="s-cities">—</strong><span>Kota</span></div>
+      <div class="stat-card"><strong id="s-cats">—</strong><span>Kategori</span></div>
+    </div>
+  </section>
+
+  <section class="companies">
+    <div class="section-head">
+      <div>
+        <p class="section-label">Mitra Terpercaya</p>
+        <h2>Perusahaan Top Indonesia</h2>
+      </div>
+    </div>
+    <div class="company-strip" id="company-strip"></div>
+  </section>
+
+  <section class="categories">
+    <div class="section-head">
+      <div>
+        <p class="section-label">Eksplorasi</p>
+        <h2>Telusuri Berdasarkan Bidang</h2>
+      </div>
+      <a href="listings.html">Semua Kategori →</a>
+    </div>
+    <div class="cat-grid" id="cat-grid"></div>
+  </section>
+
+  <section class="featured">
+    <div class="section-head">
+      <div>
+        <p class="section-label">Rekomendasi</p>
+        <h2>Lowongan Unggulan</h2>
+      </div>
+      <a href="listings.html">Lihat Semua →</a>
+    </div>
+    <div class="featured-grid" id="featured-grid"></div>
+  </section>
+
+  <div class="cta-banner">
+    <div class="cta-inner">
+      <h2>Siap Melangkah ke Karir Berikutnya?</h2>
+      <p>Jelajahi ratusan peluang baru dan temukan posisi yang tepat untuk kamu.</p>
+      <a href="listings.html" class="btn-cta-big">Jelajahi Semua Lowongan</a>
+    </div>
+  </div>
+</main>
+
+<script src="./shared.js"></script>
+<script>
+function goSearch() {
+  const q = document.getElementById('hero-q').value.trim();
+  location.href = 'listings.html' + (q ? '?q=' + encodeURIComponent(q) : '');
+}
+
+document.getElementById('hero-q').addEventListener('keydown', e => {
+  if (e.key === 'Enter') goSearch();
+});
+
+async function init() {
+  let jobs;
+  try {
+    jobs = await fetchJobs();
+  } catch(e) {
+    document.getElementById('featured-grid').innerHTML =
+      '<p style="color:var(--muted);grid-column:1/-1;padding:24px 0">Gagal memuat data. Pastikan file <code>job_portal_50_data.json</code> tersedia dan halaman dibuka via server.</p>';
+    return;
+  }
+
+  const shuffled = shuffle(jobs);
+  const companies = [...new Map(jobs.map(j => [j.company, j])).keys()];
+  const locations = [...new Set(jobs.map(j => j.location))];
+  const categories = [...new Set(jobs.map(j => j.category))];
+
+  document.getElementById('s-jobs').textContent = jobs.length + '+';
+  document.getElementById('s-companies').textContent = companies.length;
+  document.getElementById('s-cities').textContent = locations.length;
+  document.getElementById('s-cats').textContent = categories.length;
+
+  document.getElementById('company-strip').innerHTML = companies.map(c => `
+    <div class="company-card" onclick="location.href='listings.html?company=${encodeURIComponent(c)}'">
+      <img src="${logoPath(c)}" alt="${esc(c)}"
+        style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid var(--line);background:var(--panel);flex-shrink:0"
+        data-fb="${esc(c[0])}"
+        onerror="var d=document.createElement('div');d.className='company-fallback';d.textContent=this.dataset.fb;this.replaceWith(d)"
+        >
+      <span>${esc(c)}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('cat-grid').innerHTML = categories.map(cat => {
+    const count = jobs.filter(j => j.category === cat).length;
+    return `
+      <a href="listings.html?category=${encodeURIComponent(cat)}" class="cat-card">
+        <span class="cat-icon">${CAT_ICONS[cat] || ''}</span>
+        <strong>${esc(cat)}</strong>
+        <span>${count} lowongan</span>
+      </a>
+    `;
+  }).join('');
+
+  const featured = shuffled.slice(0, 6);
+  document.getElementById('featured-grid').innerHTML = featured.map((job, i) => `
+    <article class="job-card" style="animation-delay:${i * 0.06}s">
+      <div class="job-card-top">
+        <img src="${logoPath(job.company)}" alt="${esc(job.company)}" class="job-logo"
+          data-fb="${esc(job.company[0])}"
+          onerror="var d=document.createElement('div');d.className='job-logo-fb';d.textContent=this.dataset.fb;this.replaceWith(d)">
+        <div>
+          <p class="job-company">${esc(job.company)}</p>
+          <h3 class="job-title">${esc(job.title)}</h3>
+        </div>
+      </div>
+      <div class="job-meta">
+        <span>${esc(job.location)}</span>
+        <span>${esc(job.type)}</span>
+        <span>${esc(job.category)}</span>
+      </div>
+      <p class="job-salary">${esc(job.salary)}</p>
+      <div class="job-actions">
+        <a href="job-detail.html?id=${job.id}" class="btn-outline">Lihat Detail</a>
+        <a href="apply.html?id=${job.id}" class="btn-blue">Lamar Sekarang</a>
+      </div>
+    </article>
+  `).join('');
+}
+
+init();
+</script>
+</body>
+</html>

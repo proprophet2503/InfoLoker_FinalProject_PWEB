@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semua Lowongan — InfoLoker</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo-mark">
+      <span class="logo-dot"></span>
+      InfoLoker
+    </a>
+    <div class="nav-links">
+      <a href="listings.html" class="active">Lowongan</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-head">
+  <div class="breadcrumb">
+    <a href="index.html">Beranda</a>
+    <span>›</span>
+    <span>Semua Lowongan</span>
+  </div>
+  <h1>Jelajahi Semua Lowongan</h1>
+  <p id="page-subtitle">Memuat data lowongan...</p>
+</div>
+
+<div class="listings-shell">
+  <aside class="filters">
+    <h2>Filter Lowongan</h2>
+    <div class="filter-status" id="filter-status">Memuat...</div>
+
+    <div class="filter-search">
+      <input type="text" id="search-in" placeholder="Cari posisi / perusahaan...">
+    </div>
+
+    <div class="filter-group">
+      <h3>Kategori</h3>
+      <div class="chip-row" id="cat-chips"></div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Lokasi</h3>
+      <div class="chip-row" id="loc-chips"></div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Tipe Pekerjaan</h3>
+      <div class="chip-row" id="type-chips"></div>
+    </div>
+
+    <button class="btn-reset" id="btn-reset">↺ Reset Semua Filter</button>
+  </aside>
+
+  <section class="jobs-main">
+    <div class="jobs-head">
+      <h2>Hasil Pencarian</h2>
+      <div class="jobs-meta-row">
+        <span id="job-count">0 lowongan</span>
+        <select class="sort-select" id="sort-sel">
+          <option value="salary">Gaji Tertinggi</option>
+          <option value="title">A–Z</option>
+        </select>
+      </div>
+    </div>
+    <div class="jobs-list" id="jobs-list">
+      <div class="empty-msg">Memuat lowongan...</div>
+    </div>
+  </section>
+</div>
+
+<script src="./shared.js"></script>
+<script>
+const state = {
+  jobs: [],
+  shuffledBase: [],
+  query: '',
+  category: 'Semua',
+  location: 'Semua',
+  type: 'Semua',
+  sort: 'random'
+};
+
+function fmtDate(s) {
+  return new Date(s).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function filtered() {
+  let out = state.sort === 'random' ? [...state.shuffledBase] : [...state.jobs];
+  const q = state.query.trim().toLowerCase();
+  if (state.category !== 'Semua') out = out.filter(j => j.category === state.category);
+  if (state.location !== 'Semua') out = out.filter(j => j.location === state.location);
+  if (state.type !== 'Semua') out = out.filter(j => j.type === state.type);
+  if (q) out = out.filter(j =>
+    j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q)
+  );
+  if (state.sort === 'date') out.sort((a,b) => new Date(b.posted_date) - new Date(a.posted_date));
+  if (state.sort === 'salary') out.sort((a,b) => {
+    const p = s => parseInt(s.replace(/\D/g,'')) || 0;
+    return p(b.salary) - p(a.salary);
+  });
+  if (state.sort === 'title') out.sort((a,b) => a.title.localeCompare(b.title));
+  return out;
+}
+
+function makeChips(container, values, current, key) {
+  container.innerHTML = ['Semua', ...values].map(v => `
+    <button class="chip${v === current ? ' on' : ''}" data-key="${key}" data-val="${esc(v)}">${esc(v)}</button>
+  `).join('');
+}
+
+function renderFilters() {
+  const cats = [...new Set(state.jobs.map(j => j.category))].sort();
+  const locs = [...new Set(state.jobs.map(j => j.location))].sort();
+  const types = [...new Set(state.jobs.map(j => j.type))].sort();
+  makeChips(document.getElementById('cat-chips'), cats, state.category, 'category');
+  makeChips(document.getElementById('loc-chips'), locs, state.location, 'location');
+  makeChips(document.getElementById('type-chips'), types, state.type, 'type');
+}
+
+function renderJobs() {
+  const jobs = filtered();
+  const list = document.getElementById('jobs-list');
+  document.getElementById('job-count').textContent = `${jobs.length} lowongan`;
+
+  if (!jobs.length) {
+    list.innerHTML = '<div class="empty-msg">Tidak ada lowongan yang sesuai filter.</div>';
+    return;
+  }
+
+  list.innerHTML = jobs.map((job, i) => `
+    <div class="job-row" style="animation-delay:${Math.min(i,20) * 0.025}s" data-id="${job.id}">
+      <img src="${logoPath(job.company)}" alt="${esc(job.company)}" class="jrow-logo"
+        onerror="this.outerHTML='<div class=jrow-logo-fb>${esc(job.company[0])}</div>'">
+      <div class="jrow-info">
+        <p class="jrow-company">${esc(job.company)}</p>
+        <h3 class="jrow-title">${esc(job.title)}</h3>
+        <div class="jrow-chips">
+          <span class="jrow-chip">${esc(job.location)}</span>
+          <span class="jrow-chip">${esc(job.category)}</span>
+          <span class="jrow-chip">${esc(job.type)}</span>
+        </div>
+      </div>
+      <div class="jrow-right">
+        <span class="jrow-salary">${esc(job.salary)}</span>
+        <span class="jrow-date">${fmtDate(job.posted_date)}</span>
+        <div class="jrow-actions">
+          <button class="btn-sm-outline" onclick="event.stopPropagation();location.href='job-detail.html?id=${job.id}'">Detail</button>
+          <button class="btn-sm-blue" onclick="event.stopPropagation();location.href='apply.html?id=${job.id}'">Lamar</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setStatus(msg, err) {
+  const el = document.getElementById('filter-status');
+  el.textContent = msg;
+  el.classList.toggle('error', !!err);
+}
+
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const { key, val } = chip.dataset;
+  if (key === 'category') state.category = val;
+  if (key === 'location') state.location = val;
+  if (key === 'type') state.type = val;
+  renderFilters();
+  renderJobs();
+});
+
+document.getElementById('jobs-list').addEventListener('click', e => {
+  const row = e.target.closest('.job-row');
+  if (!row || e.target.tagName === 'BUTTON') return;
+  location.href = `job-detail.html?id=${row.dataset.id}`;
+});
+
+document.getElementById('search-in').addEventListener('input', e => {
+  state.query = e.target.value;
+  renderJobs();
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  state.category = 'Semua';
+  state.location = 'Semua';
+  state.type = 'Semua';
+  state.query = '';
+  document.getElementById('search-in').value = '';
+  renderFilters();
+  renderJobs();
+});
+
+document.getElementById('sort-sel').addEventListener('change', e => {
+  state.sort = e.target.value;
+  renderJobs();
+});
+
+async function init() {
+  try {
+    const data = await fetchJobs();
+    state.jobs = data;
+    state.shuffledBase = shuffle(data);
+
+    const companies = new Set(state.jobs.map(j => j.company)).size;
+    document.getElementById('page-subtitle').textContent =
+      `${state.jobs.length} lowongan dari ${companies} perusahaan terpercaya`;
+    setStatus(`${state.jobs.length} lowongan tersedia`);
+    renderFilters();
+    renderJobs();
+
+    const params = new URLSearchParams(location.search);
+    let changed = false;
+    if (params.get('q')) {
+      state.query = params.get('q');
+      document.getElementById('search-in').value = state.query;
+      changed = true;
+    }
+    if (params.get('category')) {
+      state.category = decodeURIComponent(params.get('category'));
+      changed = true;
+    }
+    if (params.get('company')) {
+      state.query = decodeURIComponent(params.get('company'));
+      document.getElementById('search-in').value = state.query;
+      changed = true;
+    }
+    if (changed) { renderFilters(); renderJobs(); }
+
+  } catch(err) {
+    setStatus('Gagal memuat data: ' + err.message, true);
+    document.getElementById('jobs-list').innerHTML =
+      '<div class="empty-msg">Tidak dapat memuat data. Pastikan file JSON tersedia dan halaman diakses via server lokal.</div>';
+    document.getElementById('page-subtitle').textContent = 'Gagal memuat lowongan';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

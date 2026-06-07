@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lamar Pekerjaan — InfoLoker</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo-mark">
+      <span class="logo-dot"></span>
+      InfoLoker
+    </a>
+    <div class="nav-links">
+      <a href="listings.html">Lowongan</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-bar">
+  <div class="breadcrumb">
+    <a href="index.html">Beranda</a>
+    <span>›</span>
+    <a href="listings.html">Lowongan</a>
+    <span>›</span>
+    <span id="bc-title">Lamar</span>
+  </div>
+  <span id="back-link"><a href="listings.html" class="back-btn">← Kembali ke Daftar</a></span>
+</div>
+
+<div id="main-content">
+  <div class="not-found">
+    <p style="color:var(--muted)">Memuat formulir lamaran...</p>
+  </div>
+</div>
+
+<script src="./shared.js"></script>
+<script>
+let skills = [];
+
+function addSkill(val) {
+  const v = val.trim().replace(/,+$/, '').trim();
+  if (!v || skills.includes(v)) return;
+  skills.push(v);
+  renderSkills();
+}
+
+function removeSkill(idx) {
+  skills.splice(idx, 1);
+  renderSkills();
+}
+
+function renderSkills() {
+  const wrap = document.getElementById('skills-wrap');
+  wrap.innerHTML = skills.map((s, i) => `
+    <span class="skill-tag">
+      ${esc(s)}
+      <button type="button" onclick="removeSkill(${i})">×</button>
+    </span>
+  `).join('') + `<input type="text" id="skills-inp" class="skills-input" placeholder="${skills.length ? '' : 'Ketik lalu Enter...'}" autocomplete="off">`;
+  attachSkillInput();
+  wrap.querySelector('#skills-inp').focus();
+}
+
+function attachSkillInput() {
+  const inp = document.getElementById('skills-inp');
+  if (!inp) return;
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addSkill(inp.value);
+      inp.value = '';
+    }
+    if (e.key === 'Backspace' && !inp.value && skills.length) {
+      removeSkill(skills.length - 1);
+    }
+  });
+}
+
+function handleFileDrop(zone, input, chosen) {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) showFile(file, chosen);
+  });
+  input.addEventListener('change', () => {
+    if (input.files[0]) showFile(input.files[0], chosen);
+  });
+}
+
+function showFile(file, chosen) {
+  const mb = (file.size / 1048576).toFixed(1);
+  chosen.textContent = `✓ ${file.name} (${mb} MB)`;
+  chosen.classList.add('show');
+}
+
+function validateAndSubmit(e) {
+  e.preventDefault();
+  let ok = true;
+
+  ['full-name', 'email', 'phone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || !el.value.trim()) {
+      if (el) el.classList.add('invalid');
+      ok = false;
+    } else {
+      el.classList.remove('invalid');
+    }
+  });
+
+  const email = document.getElementById('email');
+  if (email && email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    email.classList.add('invalid');
+    ok = false;
+  }
+
+  const agree = document.getElementById('agree-privacy');
+  if (!agree || !agree.checked) {
+    ok = false;
+    agree && agree.closest('.check-row').style.setProperty('border-color', 'var(--danger)');
+  }
+
+  if (!ok) {
+    const first = document.querySelector('.invalid, [style*="danger"]');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Mengirim...';
+
+  const jobId = new URLSearchParams(location.search).get('id');
+  setTimeout(() => showSuccess(parseInt(jobId)), 1200);
+}
+
+async function showSuccess(jobId) {
+  let company = 'Perusahaan';
+  let title = 'Posisi ini';
+  try {
+    const jobs = await fetchJobs();
+    const job = jobs.find(j => j.id === jobId);
+    if (job) { company = job.company; title = job.title; }
+  } catch(_) {}
+
+  document.getElementById('main-content').innerHTML = `
+    <div style="max-width:600px;margin:0 auto;padding:0 28px">
+      <div class="form-section success-screen">
+        <div class="success-icon">🎉</div>
+        <h2>Lamaran Terkirim!</h2>
+        <p>Selamat! Lamaranmu untuk posisi <strong>${esc(title)}</strong> di
+        <span class="company-name">${esc(company)}</span> telah berhasil dikirim.</p>
+        <p>Tim rekruter akan meninjau lamaranmu dan menghubungi melalui email atau telepon dalam 3–7 hari kerja.</p>
+        <p style="margin-top:12px;font-size:.8rem;color:var(--muted)">
+          Sambil menunggu, pastikan kamu memantau email dan tetap aktif mencari peluang lain!
+        </p>
+        <div class="success-actions">
+          <a href="listings.html" class="btn-success-main">Lihat Lowongan Lain</a>
+          <a href="index.html" class="btn-success-sec">Kembali ke Beranda</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const id = parseInt(params.get('id'));
+
+  if (!id) { showError('ID lowongan tidak ditemukan.'); return; }
+
+  let jobs;
+  try {
+    jobs = await fetchJobs();
+  } catch(_) {
+    showError('Gagal memuat data. Pastikan server lokal aktif.');
+    return;
+  }
+
+  const job = jobs.find(j => j.id === id);
+  if (!job) { showError('Lowongan tidak ditemukan.'); return; }
+
+  document.title = `Lamar: ${job.title} di ${job.company} — InfoLoker`;
+  document.getElementById('bc-title').textContent = `Lamar ${job.title}`;
+  document.getElementById('back-link').innerHTML =
+    `<a href="job-detail.html?id=${job.id}" class="back-btn">← Detail Pekerjaan</a>`;
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="apply-shell">
+      <aside class="job-summary">
+        <p class="js-label">Kamu melamar untuk</p>
+        <div class="js-header">
+          <img src="${logoPath(job.company)}" alt="${esc(job.company)}" class="js-logo"
+            data-fb="${esc(job.company[0])}"
+            onerror="var d=document.createElement('div');d.className='js-logo-fb';d.textContent=this.dataset.fb;this.replaceWith(d)">
+          <div>
+            <p class="js-company">${esc(job.company)}</p>
+            <h3 class="js-title">${esc(job.title)}</h3>
+          </div>
+        </div>
+        <div class="js-badges">
+          <div class="js-badge">&nbsp;<span>${esc(job.location)}</span></div>
+          <div class="js-badge">&nbsp;<span>${esc(job.type)}</span></div>
+          <div class="js-badge">&nbsp;<span>${esc(job.category)}</span></div>
+          <div class="js-badge">&nbsp;<span>${fmtDateLong(job.posted_date)}</span></div>
+        </div>
+        <div class="js-salary-box">
+          <p>Kisaran Gaji</p>
+          <strong>${esc(job.salary)}</strong>
+        </div>
+      </aside>
+
+      <section class="form-area">
+        <form id="apply-form" novalidate>
+
+          <div class="form-section">
+            <div class="form-section-head">
+              <div class="section-num">1</div>
+              <div>
+                <h2>Data Pribadi</h2>
+                <p>Informasi dasar tentang kamu</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>Nama Lengkap <span class="req">*</span></label>
+                <input type="text" id="full-name" placeholder="Nama sesuai KTP">
+              </div>
+              <div class="field">
+                <label>Email <span class="req">*</span></label>
+                <input type="email" id="email" placeholder="nama@email.com">
+              </div>
+              <div class="field">
+                <label>Nomor Telepon / WA <span class="req">*</span></label>
+                <input type="tel" id="phone" placeholder="08xx-xxxx-xxxx">
+              </div>
+              <div class="field">
+                <label>Kota Domisili</label>
+                <input type="text" id="city" placeholder="Contoh: Jakarta Selatan">
+              </div>
+              <div class="field">
+                <label>LinkedIn Profile</label>
+                <input type="url" id="linkedin" placeholder="https://linkedin.com/in/...">
+              </div>
+              <div class="field">
+                <label>Portfolio / Website</label>
+                <input type="url" id="portfolio-url" placeholder="https://...">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-head">
+              <div class="section-num">2</div>
+              <div>
+                <h2>Latar Belakang Profesional</h2>
+                <p>Pendidikan, pengalaman, dan keahlian</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>Pengalaman Kerja</label>
+                <select id="experience">
+                  <option value="">— Pilih —</option>
+                  <option>Fresh Graduate (0 tahun)</option>
+                  <option>Kurang dari 1 tahun</option>
+                  <option>1–2 tahun</option>
+                  <option>3–5 tahun</option>
+                  <option>5–10 tahun</option>
+                  <option>Lebih dari 10 tahun</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Pendidikan Terakhir</label>
+                <select id="education">
+                  <option value="">— Pilih —</option>
+                  <option>SMA / SMK</option>
+                  <option>D3 / Diploma</option>
+                  <option>S1 / Sarjana</option>
+                  <option>S2 / Magister</option>
+                  <option>S3 / Doktoral</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Universitas / Institusi</label>
+                <input type="text" id="university" placeholder="Nama universitas">
+              </div>
+              <div class="field">
+                <label>Jurusan / Bidang Studi</label>
+                <input type="text" id="major" placeholder="Contoh: Teknik Informatika">
+              </div>
+              <div class="field">
+                <label>Gaji yang Diharapkan (Rp)</label>
+                <input type="text" id="salary-exp" placeholder="Contoh: 8.000.000">
+              </div>
+              <div class="field">
+                <label>Ketersediaan Mulai Kerja</label>
+                <select id="availability">
+                  <option value="">— Pilih —</option>
+                  <option>Segera (dalam 1 minggu)</option>
+                  <option>2 minggu lagi</option>
+                  <option>1 bulan lagi</option>
+                  <option>2–3 bulan lagi</option>
+                  <option>Masih perlu negosiasi</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Preferensi Kerja</label>
+                <select id="work-pref">
+                  <option value="">— Pilih —</option>
+                  <option>On-site penuh</option>
+                  <option>Remote penuh</option>
+                  <option>Hybrid (fleksibel)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Perusahaan Sebelumnya</label>
+                <input type="text" id="prev-company" placeholder="Nama perusahaan terakhir">
+              </div>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label>Keahlian / Skills</label>
+              <div class="skills-wrap" id="skills-wrap" onclick="document.getElementById('skills-inp').focus()">
+                <input type="text" id="skills-inp" class="skills-input" placeholder="Ketik lalu Enter..." autocomplete="off">
+              </div>
+              <span class="skills-hint">Tekan Enter atau koma untuk menambah skill</span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-head">
+              <div class="section-num">3</div>
+              <div>
+                <h2>Surat &amp; Dokumen</h2>
+                <p>Cover letter dan file lamaran</p>
+              </div>
+            </div>
+            <div class="form-grid full" style="gap:14px">
+              <div class="field">
+                <label>Cover Letter / Surat Lamaran</label>
+                <textarea id="cover-letter"
+                  placeholder="Ceritakan mengapa kamu tertarik dengan posisi ${esc(job.title)} di ${esc(job.company)} dan apa yang membuatmu kandidat yang tepat..."></textarea>
+                <span class="hint">Tulis dengan tulus dan spesifik. Minimal 100 karakter.</span>
+              </div>
+              <div class="field">
+                <label>Upload CV / Resume <span class="req">*</span></label>
+                <div class="file-drop" id="cv-zone">
+                  <input type="file" id="cv-file" accept=".pdf,.doc,.docx">
+                  <span class="file-drop-icon">📄</span>
+                  <p>Drag &amp; drop CV kamu, atau <strong style="color:var(--brand)">klik untuk pilih file</strong></p>
+                  <span>PDF, DOC, DOCX · Maks. 5MB</span>
+                  <div class="file-chosen" id="cv-chosen"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Upload Portfolio <span style="font-size:.74rem;color:var(--muted)">(opsional)</span></label>
+                <div class="file-drop" id="porto-zone">
+                  <input type="file" id="porto-file" accept=".pdf,.zip,.rar,.pptx">
+                  <span class="file-drop-icon">🗂</span>
+                  <p>Upload portfolio atau hasil kerjamu</p>
+                  <span>PDF, ZIP, PPTX · Maks. 20MB</span>
+                  <div class="file-chosen" id="porto-chosen"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-head">
+              <div class="section-num">4</div>
+              <div>
+                <h2>Pertanyaan Tambahan</h2>
+                <p>Info ekstra untuk tim rekruter</p>
+              </div>
+            </div>
+            <div class="form-grid full" style="gap:10px">
+              <label class="check-row">
+                <input type="checkbox" id="relocation">
+                <div>
+                  <div class="check-label">Bersedia relokasi ke kota lain</div>
+                  <div class="check-sub">Jika posisi mengharuskan perpindahan kota</div>
+                </div>
+              </label>
+              <label class="check-row">
+                <input type="checkbox" id="overtime">
+                <div>
+                  <div class="check-label">Bersedia lembur bila diperlukan</div>
+                  <div class="check-sub">Dengan kompensasi sesuai peraturan perusahaan</div>
+                </div>
+              </label>
+              <label class="check-row">
+                <input type="checkbox" id="referral">
+                <div>
+                  <div class="check-label">Mengetahui lowongan dari referensi karyawan</div>
+                  <div class="check-sub">Program referral internal perusahaan</div>
+                </div>
+              </label>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label>Sumber Informasi Lowongan</label>
+              <select id="source">
+                <option value="">— Pilih —</option>
+                <option>Website InfoLoker</option>
+                <option>LinkedIn</option>
+                <option>Instagram / Media Sosial</option>
+                <option>Rekomendasi teman / keluarga</option>
+                <option>Job fair / Campus recruit</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label>Pesan / Informasi Tambahan</label>
+              <textarea id="extra" style="min-height:80px"
+                placeholder="Ada yang ingin kamu sampaikan kepada rekruter ${esc(job.company)}?"></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label class="check-row" style="margin-bottom:20px">
+              <input type="checkbox" id="agree-privacy">
+              <div>
+                <div class="check-label">Saya menyetujui Kebijakan Privasi InfoLoker <span class="req" style="font-size:.9rem">*</span></div>
+                <div class="check-sub">Data saya akan digunakan sesuai ketentuan yang berlaku dan diteruskan ke tim rekruter ${esc(job.company)}</div>
+              </div>
+            </label>
+            <div class="submit-row">
+              <button type="submit" class="btn-submit" id="submit-btn">Kirim Lamaran →</button>
+              <a href="job-detail.html?id=${job.id}" class="btn-cancel">Batal</a>
+              <p class="form-note">Pastikan semua data yang kamu isi sudah benar sebelum mengirim.</p>
+            </div>
+          </div>
+
+        </form>
+      </section>
+    </div>
+  `;
+
+  document.getElementById('apply-form').addEventListener('submit', validateAndSubmit);
+  attachSkillInput();
+
+  handleFileDrop(
+    document.getElementById('cv-zone'),
+    document.getElementById('cv-file'),
+    document.getElementById('cv-chosen')
+  );
+  handleFileDrop(
+    document.getElementById('porto-zone'),
+    document.getElementById('porto-file'),
+    document.getElementById('porto-chosen')
+  );
+}
+
+function showError(msg) {
+  document.getElementById('main-content').innerHTML = `
+    <div class="not-found">
+      <div style="font-size:3rem;margin-bottom:16px">⚠️</div>
+      <h2>Terjadi Kesalahan</h2>
+      <p>${esc(msg)}</p>
+      <a href="listings.html" style="display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-d));font-family:'Sora',sans-serif;font-weight:700;color:#040914">← Lihat Semua Lowongan</a>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Pelamar — InfoLoker</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .dash-wrap { max-width: 960px; margin: 32px auto; padding: 0 20px; }
+  .dash-header { margin-bottom: 28px; }
+  .dash-header h1 { font-size: 1.5rem; }
+  .dash-header p  { color: var(--muted); }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .stat-box { background: var(--card); border-radius: 10px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.07); text-align: center; }
+  .stat-box strong { display: block; font-size: 2rem; color: var(--primary); }
+  .stat-box span   { font-size: .82rem; color: var(--muted); }
+  .section-title { font-size: 1.1rem; font-weight: 700; margin: 24px 0 12px; }
+  .lamaran-table { width: 100%; border-collapse: collapse; font-size: .9rem; background: var(--card); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+  .lamaran-table th { background: var(--primary); color: #fff; padding: 10px 14px; text-align: left; }
+  .lamaran-table td { padding: 10px 14px; border-bottom: 1px solid #eee; }
+  .badge-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600; }
+  .badge-pending  { background: #fff3e0; color: #e65c00; }
+  .badge-review   { background: #e3f2fd; color: #1565c0; }
+  .badge-diterima { background: #e6f4ea; color: #1e7e34; }
+  .badge-ditolak  { background: #fce8e8; color: #c62828; }
+  .btn-logout { background: none; border: 1.5px solid var(--primary); color: var(--primary); padding: 6px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo-mark"><span class="logo-dot"></span>InfoLoker</a>
+    <div class="nav-links">
+      <a href="../listings.html">Lowongan</a>
+      <a href="profil.html">Profil Saya</a>
+      <button class="btn-logout" onclick="logout()">Keluar</button>
+    </div>
+  </div>
+</nav>
+
+<div class="dash-wrap">
+  <div class="dash-header">
+    <h1>Dashboard Pelamar</h1>
+    <p id="greeting">Selamat datang!</p>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-box"><strong id="s-total">—</strong><span>Total Lamaran</span></div>
+    <div class="stat-box"><strong id="s-pending">—</strong><span>Menunggu</span></div>
+    <div class="stat-box"><strong id="s-review">—</strong><span>Sedang Direview</span></div>
+    <div class="stat-box"><strong id="s-diterima">—</strong><span>Diterima</span></div>
+  </div>
+
+  <div class="section-title">Riwayat Lamaran</div>
+  <table class="lamaran-table">
+    <thead><tr><th>Posisi</th><th>Perusahaan</th><th>Tanggal Lamar</th><th>Status</th><th>No. Referensi</th></tr></thead>
+    <tbody id="tbl-lamaran"><tr><td colspan="5" style="text-align:center;color:var(--muted)">Memuat data...</td></tr></tbody>
+  </table>
+</div>
+
+<script src="../shared.js"></script>
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script>
+if (!authUtils.requireAuth('pelamar')) { /* redirect handled */ }
+const user = authUtils.getUser();
+document.getElementById('greeting').textContent = `Halo, ${user?.nama || ''}!`;
+
+async function loadDashboard() {
+  const res = await api.get('/lamaran/saya');
+  const data = res.data || [];
+  const tbody = document.getElementById('tbl-lamaran');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Belum ada lamaran</td></tr>'; return; }
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td><strong>${esc(r.judul)}</strong></td>
+      <td>${esc(r.nama_perusahaan)}</td>
+      <td>${fmtDate(r.submitted_at)}</td>
+      <td><span class="badge-status badge-${r.status}">${r.status.charAt(0).toUpperCase()+r.status.slice(1)}</span></td>
+      <td style="font-family:monospace;font-size:.8rem">${esc(r.no_referensi)}</td>
+    </tr>`).join('');
+  document.getElementById('s-total').textContent    = data.length;
+  document.getElementById('s-pending').textContent  = data.filter(r=>r.status==='pending').length;
+  document.getElementById('s-review').textContent   = data.filter(r=>r.status==='review').length;
+  document.getElementById('s-diterima').textContent = data.filter(r=>r.status==='diterima').length;
+}
+
+function logout() { authUtils.clearAuth(); window.location.href = '../index.html'; }
+
+loadDashboard();
+</script>
+</body>
+</html>

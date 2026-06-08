@@ -1,19 +1,19 @@
--- ============================================================
+
 -- InfoLoker Database Schema
 -- Database : infoloker_db
 -- Engine   : MySQL 8.x | InnoDB
 -- Charset  : utf8mb4_unicode_ci
 -- Backend  : PHP Native + PDO
 -- Dibuat   : 2026-06-07
--- ============================================================
+
 
 CREATE DATABASE IF NOT EXISTS infoloker_db
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE infoloker_db;
 
--- ============================================================
+
 -- 1. TABEL USERS
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS users (
   id          INT           NOT NULL AUTO_INCREMENT,
   nama        VARCHAR(100)  NOT NULL,
@@ -28,9 +28,9 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uq_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 2. TABEL PELAMAR_PROFILES (1:1 dengan users)
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS pelamar_profiles (
   id            INT           NOT NULL AUTO_INCREMENT,
   user_id       INT           NOT NULL,
@@ -47,9 +47,9 @@ CREATE TABLE IF NOT EXISTS pelamar_profiles (
     REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 3. TABEL PERUSAHAAN_PROFILES (1:1 dengan users)
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS perusahaan_profiles (
   id               INT           NOT NULL AUTO_INCREMENT,
   user_id          INT           NOT NULL,
@@ -67,9 +67,9 @@ CREATE TABLE IF NOT EXISTS perusahaan_profiles (
     REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 4. TABEL LOWONGAN
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS lowongan (
   id               INT           NOT NULL AUTO_INCREMENT,
   perusahaan_id    INT           NOT NULL,
@@ -99,9 +99,9 @@ CREATE TABLE IF NOT EXISTS lowongan (
     REFERENCES perusahaan_profiles(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 5. TABEL LAMARAN
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS lamaran (
   id            INT           NOT NULL AUTO_INCREMENT,
   lowongan_id   INT           NOT NULL,
@@ -129,9 +129,9 @@ CREATE TABLE IF NOT EXISTS lamaran (
     REFERENCES users(id)    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 6. TABEL BOOKMARKS
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS bookmarks (
   id          INT       NOT NULL AUTO_INCREMENT,
   user_id     INT       NOT NULL,
@@ -145,9 +145,9 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     REFERENCES lowongan(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 7. TABEL SKILLS
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS skills (
   id          INT          NOT NULL AUTO_INCREMENT,
   pelamar_id  INT          NOT NULL,
@@ -158,9 +158,9 @@ CREATE TABLE IF NOT EXISTS skills (
     REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 8. TABEL PENGALAMAN_KERJA
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS pengalaman_kerja (
   id          INT          NOT NULL AUTO_INCREMENT,
   pelamar_id  INT          NOT NULL,
@@ -175,9 +175,9 @@ CREATE TABLE IF NOT EXISTS pengalaman_kerja (
     REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- 9. TABEL PENDIDIKAN
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS pendidikan (
   id           INT     NOT NULL AUTO_INCREMENT,
   pelamar_id   INT     NOT NULL,
@@ -192,11 +192,11 @@ CREATE TABLE IF NOT EXISTS pendidikan (
     REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================
+
 -- SEED: Akun admin default
 -- GANTI hash dengan output password_hash('passwordmu', PASSWORD_BCRYPT) di PHP
 -- Contoh: php -r "echo password_hash('Admin1234!', PASSWORD_BCRYPT);"
--- ============================================================
+
 INSERT IGNORE INTO users (nama, email, password, role, is_active)
 VALUES (
   'Admin InfoLoker',

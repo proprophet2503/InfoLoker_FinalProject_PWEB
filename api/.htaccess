@@ -1,0 +1,7 @@
+# Blokir akses langsung ke file include internal (tetap bisa di-include PHP).
+<FilesMatch "^(config|db|helpers|_map)\.php$">
+  Require all denied
+</FilesMatch>
+
+# Jangan tampilkan daftar isi folder.
+Options -Indexes

@@ -16,7 +16,7 @@ OUT_PATH = os.path.join(HERE, "schema.sql")
 
 # Demo password for all seeded accounts = "Password123"
 # bcrypt hash (PASSWORD_BCRYPT, cost 10) generated with PHP password_hash().
-DEMO_HASH = "$2y$10$wH8Qb1Yx9mN3oP5rT7uVeOq2sK4lA6dF8gH0jK2lM4nO6pQ8rS0u"
+DEMO_HASH = "$2y$10$dXZnKtr3YVB6Zylaw25M9OpfnzwOEFpqtIrNzZhKMrKy9BmuJL5CW"
 
 
 def sql_str(v):

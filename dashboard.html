@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Pelamar — InfoLoker</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .dash-wrap { max-width: 960px; margin: 32px auto; padding: 0 20px; }
+  .dash-header { margin-bottom: 28px; }
+  .dash-header h1 { font-size: 1.5rem; color:#111827 }
+  .dash-header p  { color: #6b7280; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .stat-box { background: #fff; border:1px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.06); text-align: center; }
+  .stat-box strong { display: block; font-size: 2rem; color: var(--primary,#2563eb); }
+  .stat-box span   { font-size: .82rem; color: #6b7280; }
+  .section-title { font-size: 1.1rem; font-weight: 700; margin: 24px 0 12px; color:#111827 }
+  .lamaran-table { width: 100%; border-collapse: collapse; font-size: .9rem; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.06); }
+  .lamaran-table th { background: var(--primary,#2563eb); color: #fff; padding: 11px 14px; text-align: left; }
+  .lamaran-table td { padding: 11px 14px; border-bottom: 1px solid #eee; }
+  .badge-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600; }
+  .badge-pending  { background: #fff3e0; color: #e65c00; }
+  .badge-review   { background: #e3f2fd; color: #1565c0; }
+  .badge-diterima { background: #e6f4ea; color: #1e7e34; }
+  .badge-ditolak  { background: #fce8e8; color: #c62828; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo-mark"><span class="logo-dot"></span>InfoLoker</a>
+    <div class="nav-links">
+      <a href="listings.html">Lowongan</a>
+    </div>
+    <div class="nav-auth" id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="dash-wrap">
+  <div class="dash-header">
+    <h1>Dashboard Pelamar</h1>
+    <p id="greeting">Selamat datang!</p>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-box"><strong id="s-total">—</strong><span>Total Lamaran</span></div>
+    <div class="stat-box"><strong id="s-pending">—</strong><span>Menunggu</span></div>
+    <div class="stat-box"><strong id="s-review">—</strong><span>Sedang Direview</span></div>
+    <div class="stat-box"><strong id="s-diterima">—</strong><span>Diterima</span></div>
+  </div>
+
+  <div class="section-title">Riwayat Lamaran</div>
+  <table class="lamaran-table">
+    <thead><tr><th>Posisi</th><th>Perusahaan</th><th>Tanggal Lamar</th><th>Status</th><th>No. Referensi</th></tr></thead>
+    <tbody id="tbl-lamaran"><tr><td colspan="5" style="text-align:center;color:#6b7280">Memuat data...</td></tr></tbody>
+  </table>
+</div>
+
+<script src="./shared.js"></script>
+<script src="./api.js"></script>
+<script src="./auth.js"></script>
+<script>
+(async function () {
+  const user = await authUtils.requireAuth('pelamar');
+  if (!user) return;
+  document.getElementById('greeting').textContent = `Halo, ${user.nama || ''}!`;
+
+  const tbody = document.getElementById('tbl-lamaran');
+  let data = [];
+  try {
+    const res = await api.get('/lamaran/mine.php');
+    data = res.data || [];
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#c62828">Gagal memuat: ${esc(err.message)}</td></tr>`;
+    return;
+  }
+
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6b7280">Belum ada lamaran</td></tr>';
+  } else {
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td><strong>${esc(r.judul)}</strong></td>
+        <td>${esc(r.nama_perusahaan)}</td>
+        <td>${fmtDate(r.submitted_at)}</td>
+        <td><span class="badge-status badge-${esc(r.status)}">${esc(r.status.charAt(0).toUpperCase() + r.status.slice(1))}</span></td>
+        <td style="font-family:monospace;font-size:.8rem">${esc(r.no_referensi)}</td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('s-total').textContent    = data.length;
+  document.getElementById('s-pending').textContent  = data.filter(r => r.status === 'pending').length;
+  document.getElementById('s-review').textContent   = data.filter(r => r.status === 'review').length;
+  document.getElementById('s-diterima').textContent = data.filter(r => r.status === 'diterima').length;
+})();
+</script>
+</body>
+</html>

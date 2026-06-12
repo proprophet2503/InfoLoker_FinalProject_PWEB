@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — InfoLoker</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--surface,#f3f4f6); padding: 24px; }
+  .auth-card { background: #fff; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.1); padding: 40px; width: 100%; max-width: 420px; }
+  .auth-logo { text-align: center; font-size: 1.5rem; font-weight: 800; color: var(--primary,#2563eb); margin-bottom: 6px; }
+  .auth-card h2 { font-size: 1.2rem; margin-bottom: 20px; text-align:center; color:#111827 }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 6px; color:#374151 }
+  .form-group input { width: 100%; padding: 11px 14px; border: 1.5px solid #d0d5dd; border-radius: 8px; font-size: .95rem; outline: none; box-sizing: border-box; }
+  .form-group input:focus { border-color: var(--primary,#2563eb); }
+  .err { color: #c62828; font-size: .85rem; margin: 8px 0; display: none; }
+  .note { color:#1e7e34; font-size:.85rem; margin-bottom:12px; display:none; }
+  .btn-primary { width: 100%; padding: 12px; background: var(--primary,#2563eb); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 4px; }
+  .btn-primary:disabled { opacity:.6; cursor:not-allowed }
+  .auth-footer { text-align: center; margin-top: 20px; font-size: .88rem; color: #6b7280; }
+  .auth-footer a { color: var(--primary,#2563eb); font-weight: 600; text-decoration:none }
+  .demo { margin-top:16px; font-size:.78rem; color:#6b7280; background:#f9fafb; border:1px dashed #e5e7eb; border-radius:8px; padding:10px 12px; }
+  .demo code { color:#111827 }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">InfoLoker</div>
+    <h2>Masuk ke Akun Anda</h2>
+    <p class="note" id="note-msg">Pendaftaran berhasil! Silakan login.</p>
+    <form id="form-login">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="nama@email.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <p class="err" id="err-msg"></p>
+      <button class="btn-primary" type="submit" id="submit-btn">Masuk</button>
+    </form>
+    <div class="auth-footer">Belum punya akun? <a href="register.html">Daftar sekarang</a></div>
+    <div class="demo">
+      Akun demo: <code>pelamar@infoloker.id</code> / <code>Password123</code>
+    </div>
+  </div>
+</div>
+<script src="./api.js"></script>
+<script src="./auth.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+if (params.get('registered')) document.getElementById('note-msg').style.display = 'block';
+
+// Jika sudah login, langsung ke beranda.
+authUtils.ready.then(user => { if (user) window.location.href = 'index.html'; });
+
+document.getElementById('form-login').addEventListener('submit', async e => {
+  e.preventDefault();
+  const errEl = document.getElementById('err-msg');
+  const btn = document.getElementById('submit-btn');
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Memproses...';
+  try {
+    const res = await api.post('/auth/login.php', {
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value,
+    });
+    api.resetSession();
+    const role = res.data.role;
+    const next = params.get('next');
+    if (next && /^[a-z0-9_-]+\.html$/i.test(next)) window.location.href = next;
+    else if (role === 'pelamar') window.location.href = 'dashboard.html';
+    else window.location.href = 'index.html';
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Masuk';
+  }
+});
+</script>
+</body>
+</html>

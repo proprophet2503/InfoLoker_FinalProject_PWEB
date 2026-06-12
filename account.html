@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Akun Saya — InfoLoker</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .acc-wrap { max-width: 640px; margin: 32px auto; padding: 0 20px; }
+  .acc-wrap h1 { font-size: 1.5rem; margin-bottom: 4px; color:#111827 }
+  .acc-wrap .sub { color:#6b7280; margin-bottom: 24px; }
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; margin-bottom:24px; box-shadow:0 1px 6px rgba(0,0,0,.05) }
+  .card h2 { font-size:1.05rem; margin-bottom:16px; color:#111827 }
+  .form-group { margin-bottom:14px }
+  .form-group label { display:block; font-size:.85rem; font-weight:600; margin-bottom:6px; color:#374151 }
+  .form-group input { width:100%; padding:10px 14px; border:1.5px solid #d0d5dd; border-radius:8px; font-size:.95rem; box-sizing:border-box; outline:none }
+  .form-group input:focus { border-color:var(--primary,#2563eb) }
+  .form-group input[readonly]{ background:#f3f4f6; color:#6b7280 }
+  .btn-primary { padding:11px 22px; background:var(--primary,#2563eb); color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer }
+  .btn-primary:disabled { opacity:.6; cursor:not-allowed }
+  .msg { font-size:.85rem; margin:10px 0; display:none }
+  .msg.ok { color:#1e7e34 } .msg.err { color:#c62828 }
+  .badge-role{ display:inline-block; background:#eef2ff; color:#3730a3; padding:3px 10px; border-radius:999px; font-size:.75rem; font-weight:700; text-transform:capitalize }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo-mark"><span class="logo-dot"></span>InfoLoker</a>
+    <div class="nav-links">
+      <a href="listings.html">Lowongan</a>
+    </div>
+    <div class="nav-auth" id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="acc-wrap">
+  <h1>Akun Saya</h1>
+  <p class="sub">Kelola informasi pribadi akun Anda. <span class="badge-role" id="role-badge"></span></p>
+
+  <div class="card">
+    <h2>Informasi Pribadi</h2>
+    <form id="form-profile">
+      <div class="form-group">
+        <label>Nama Lengkap</label>
+        <input type="text" id="nama" required>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="form-group">
+        <label>Nomor HP</label>
+        <input type="tel" id="no_hp" placeholder="08xxxxxxxxxx">
+      </div>
+      <p class="msg" id="profile-msg"></p>
+      <button class="btn-primary" type="submit" id="profile-btn">Simpan Perubahan</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Ganti Password</h2>
+    <form id="form-password">
+      <div class="form-group">
+        <label>Password Lama</label>
+        <input type="password" id="current_password" required autocomplete="current-password">
+      </div>
+      <div class="form-group">
+        <label>Password Baru</label>
+        <input type="password" id="new_password" placeholder="Min. 8 karakter + angka" required autocomplete="new-password">
+      </div>
+      <p class="msg" id="password-msg"></p>
+      <button class="btn-primary" type="submit" id="password-btn">Ubah Password</button>
+    </form>
+  </div>
+</div>
+
+<script src="./api.js"></script>
+<script src="./auth.js"></script>
+<script>
+function show(el, text, ok) {
+  el.textContent = text;
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+  el.style.display = 'block';
+}
+
+(async function () {
+  const user = await authUtils.requireAuth();
+  if (!user) return;
+
+  document.getElementById('nama').value = user.nama || '';
+  document.getElementById('email').value = user.email || '';
+  document.getElementById('no_hp').value = user.no_hp || '';
+  document.getElementById('role-badge').textContent = user.role;
+
+  document.getElementById('form-profile').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('profile-btn');
+    const msg = document.getElementById('profile-msg');
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    try {
+      await api.post('/profile/update.php', {
+        nama: document.getElementById('nama').value,
+        email: document.getElementById('email').value,
+        no_hp: document.getElementById('no_hp').value,
+      });
+      api.resetSession();
+      show(msg, 'Perubahan tersimpan.', true);
+    } catch (err) {
+      show(msg, err.message, false);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Simpan Perubahan';
+    }
+  });
+
+  document.getElementById('form-password').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('password-btn');
+    const msg = document.getElementById('password-msg');
+    btn.disabled = true; btn.textContent = 'Memproses...';
+    try {
+      await api.post('/profile/password.php', {
+        current_password: document.getElementById('current_password').value,
+        new_password: document.getElementById('new_password').value,
+      });
+      show(msg, 'Password berhasil diubah.', true);
+      e.target.reset();
+    } catch (err) {
+      show(msg, err.message, false);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Ubah Password';
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -98,7 +98,7 @@ async function init() {
     jobs = await fetchJobs();
   } catch(e) {
     document.getElementById('featured-grid').innerHTML =
-      '<p style="color:var(--muted);grid-column:1/-1;padding:24px 0">Gagal memuat data. Pastikan file <code>job_portal_50_data.json</code> tersedia dan halaman dibuka via server.</p>';
+      '<p style="color:var(--muted);grid-column:1/-1;padding:24px 0">Gagal memuat data lowongan. Pastikan backend PHP & database aktif.</p>';
     return;
   }
 

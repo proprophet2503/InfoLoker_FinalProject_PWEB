@@ -17,6 +17,7 @@
     <div class="nav-links">
       <a href="listings.html">Lowongan</a>
     </div>
+    <div class="nav-auth" id="nav-auth"></div>
   </div>
 </nav>
 
@@ -38,8 +39,11 @@
 </div>
 
 <script src="./shared.js"></script>
+<script src="./api.js"></script>
+<script src="./auth.js"></script>
 <script>
 let skills = [];
+let currentJobId = null;
 
 function addSkill(val) {
   const v = val.trim().replace(/,+$/, '').trim();
@@ -132,20 +136,38 @@ function validateAndSubmit(e) {
     return;
   }
 
+  submitApplication();
+}
+
+async function submitApplication() {
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
   btn.textContent = 'Mengirim...';
 
-  const jobId = new URLSearchParams(location.search).get('id');
-  setTimeout(() => showSuccess(parseInt(jobId)), 1200);
+  const fd = new FormData();
+  fd.append('lowongan_id', currentJobId);
+  fd.append('cover_letter', document.getElementById('cover-letter')?.value || '');
+  fd.append('pengalaman', document.getElementById('experience')?.value || '');
+  fd.append('sumber_info', document.getElementById('source')?.value || '');
+  fd.append('skills', skills.join('\n'));
+  const cv = document.getElementById('cv-file')?.files?.[0];
+  if (cv) fd.append('cv', cv);
+
+  try {
+    await api.postForm('/lamaran/create.php', fd);
+    showSuccess(currentJobId);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Kirim Lamaran →';
+    alert('Gagal mengirim lamaran: ' + err.message);
+  }
 }
 
 async function showSuccess(jobId) {
   let company = 'Perusahaan';
   let title = 'Posisi ini';
   try {
-    const jobs = await fetchJobs();
-    const job = jobs.find(j => j.id === jobId);
+    const job = await fetchJob(jobId);
     if (job) { company = job.company; title = job.title; }
   } catch(_) {}
 
@@ -170,20 +192,22 @@ async function showSuccess(jobId) {
 }
 
 async function init() {
+  const user = await authUtils.requireAuth('pelamar');
+  if (!user) return; // diarahkan ke halaman login
+
   const params = new URLSearchParams(location.search);
   const id = parseInt(params.get('id'));
 
   if (!id) { showError('ID lowongan tidak ditemukan.'); return; }
+  currentJobId = id;
 
-  let jobs;
+  let job;
   try {
-    jobs = await fetchJobs();
-  } catch(_) {
-    showError('Gagal memuat data. Pastikan server lokal aktif.');
+    job = await fetchJob(id);
+  } catch(err) {
+    showError('Gagal memuat data: ' + err.message);
     return;
   }
-
-  const job = jobs.find(j => j.id === id);
   if (!job) { showError('Lowongan tidak ditemukan.'); return; }
 
   document.title = `Lamar: ${job.title} di ${job.company} — InfoLoker`;
@@ -454,6 +478,14 @@ async function init() {
     document.getElementById('porto-file'),
     document.getElementById('porto-chosen')
   );
+
+  // Prefill data pribadi dari akun yang login.
+  const nameEl = document.getElementById('full-name');
+  const emailEl = document.getElementById('email');
+  const phoneEl = document.getElementById('phone');
+  if (nameEl) nameEl.value = user.nama || '';
+  if (emailEl) emailEl.value = user.email || '';
+  if (phoneEl && user.no_hp) phoneEl.value = user.no_hp;
 }
 
 function showError(msg) {

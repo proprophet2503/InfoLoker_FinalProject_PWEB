@@ -26,14 +26,14 @@
   function injectStyles() {
     if (document.getElementById('nav-auth-styles')) return;
     const css = `
-      .nav-auth{display:flex;align-items:center;gap:10px;margin-left:auto}
+      .nav-auth{display:flex;align-items:center;gap:10px}
       .nav-auth a.na-login{font-weight:600;color:var(--text,#1f2937);text-decoration:none}
-      .nav-auth a.na-register{font-weight:700;text-decoration:none;background:var(--primary,#2563eb);
+      .nav-auth a.na-register{font-weight:700;text-decoration:none;background:var(--brand,#0A66C2);
         color:#fff;padding:8px 16px;border-radius:8px}
       .na-menu{position:relative}
       .na-trigger{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid #e5e7eb;
         padding:6px 12px;border-radius:999px;cursor:pointer;font-weight:600;color:var(--text,#1f2937)}
-      .na-avatar{width:28px;height:28px;border-radius:50%;background:var(--primary,#2563eb);color:#fff;
+      .na-avatar{width:28px;height:28px;border-radius:50%;background:var(--brand,#0A66C2);color:#fff;
         display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
       .na-dropdown{position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid #e5e7eb;
         border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.12);min-width:200px;padding:6px;display:none;z-index:50}

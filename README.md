@@ -1,71 +1,134 @@
-# InfoLoker Portal Lowongan Kerja
+# InfoLoker — Portal Lowongan Kerja
 
-Portal lowongan kerja berbasis web yang memungkinkan pengguna menelusuri, memfilter, dan melamar pekerjaan secara online. Dibangun menggunakan HTML, CSS, dan JavaScript murni tanpa framework tambahan.
+Stack: **HTML + CSS + JavaScript (Bootstrap-friendly)** di frontend, **PHP Native + PDO**
+di backend, **MySQL/MariaDB** sebagai database. Dirancang agar jalan di **InfinityFree**
+(juga bisa di XAMPP untuk testing lokal).
 
-InfoLoker adalah portal lowongan kerja berbasis web yang dibangun menggunakan HTML, CSS, dan JavaScript murni tanpa framework tambahan. Portal ini menampilkan 50 data lowongan dari berbagai perusahaan dan kategori di Indonesia, lengkap dengan fitur filter multi-kriteria yang memungkinkan pengguna menyaring lowongan berdasarkan lokasi, kategori, tipe pekerjaan, serta pencarian teks secara real-time. Seluruh data dikelola dalam satu file JSON dan dimuat secara dinamis menggunakan Fetch API, sementara fungsi-fungsi utilitas seperti sanitasi output, format tanggal, dan render komponen dipusatkan dalam satu file shared.js yang digunakan bersama di semua halaman.
-Proyek ini terdiri dari empat halaman utama: beranda dengan hero section dan kategori populer, halaman daftar lowongan dengan sidebar filter, halaman detail pekerjaan yang memuat data secara dinamis dari URL parameter, serta halaman form lamaran dengan validasi input. Desain menggunakan sistem CSS custom properties yang konsisten di seluruh halaman, dengan palet warna biru LinkedIn sebagai identitas visual utama. Hasil akhirnya adalah portal yang ringan, responsif, dan dapat dijalankan hanya dengan local server tanpa dependensi eksternal apapun.
-2
-
----
-
-## Fitur
-
-- **Daftar Lowongan**  Menampilkan 50 data lowongan kerja dalam tampilan grid yang responsif.
-- **Filter Multi-Kriteria** Filter berdasarkan lokasi, kategori, tipe pekerjaan, dan pencarian teks secara real-time.
-- **Detail Pekerjaan**  Halaman detail lengkap berisi deskripsi posisi, kualifikasi, informasi perusahaan, dan lowongan terkait.
-- **Form Lamaran**  Formulir interaktif dengan validasi input dan konfirmasi submission.
+Autentikasi memakai **PHP session** + `password_hash()` (BCRYPT). Tidak ada Node.js,
+tidak ada Composer — semua fitur memakai ekstensi PHP bawaan (PDO MySQL) yang
+tersedia di InfinityFree.
 
 ---
 
-## Struktur File
+## Struktur
 
 ```
-project/
-├── assets/
-│   └── logos/               # Logo perusahaan 
-├── index.html               # Halaman beranda
-├── listings.html            # Daftar dan filter lowongan
-├── job-detail.html          # Detail pekerjaan
-├── apply.html               # Form lamaran
-├── shared.js                # Fungsi dan utilitas bersama
-├── style.css                # style global theme terinspirasi linkedin
-└── job_portal_50_data.json  # Data 50 lowongan kerja
+(htdocs root)
+├── index.html, listings.html, job-detail.html, apply.html
+├── login.html, register.html, account.html, dashboard.html
+├── styles.css, shared.js, api.js, auth.js
+├── assets/logos/*.png
+├── api/                      ← backend PHP
+│   ├── config.php            ← ISI kredensial DB di sini
+│   ├── db.php, helpers.php, .htaccess
+│   ├── auth/   register.php login.php logout.php me.php
+│   ├── profile/ update.php password.php
+│   ├── jobs/   list.php detail.php _map.php
+│   └── lamaran/ create.php mine.php
+├── uploads/                  ← file CV (otomatis dibuat)
+└── database/
+    ├── schema.sql            ← import ini ke phpMyAdmin
+    └── generate_schema.py    ← (opsional) regen schema dari data
 ```
 
+> **Penyebab error 403 sebelumnya:** semua file harus berada **langsung di dalam
+> `htdocs`**, bukan di dalam subfolder seperti `htdocs/InfoLoker_FinalProject/`.
+> Kalau ada subfolder, root domain tidak punya `index.html` sehingga muncul
+> *403 Forbidden*. Lihat langkah 3.
+
 ---
 
-## Format Data
+## Cara Setup di InfinityFree
 
-Data lowongan tersimpan dalam file JSON dengan struktur berikut:
+### 1. Buat akun & domain
+Login ke InfinityFree → **Create Account** → pilih subdomain gratis
+(mis. `namamu.infinityfreeapp.com`) atau pasang domain sendiri. Tunggu sampai akun aktif.
 
-```json
-{
-  "id": 1,
-  "title": "Frontend Developer",
-  "company": "Gojek",
-  "location": "Jakarta",
-  "category": "IT",
-  "type": "Full-time",
-  "salary": "Rp5.000.000 - Rp8.000.000",
-  "posted_date": "2026-04-19",
-  "description": "Deskripsi posisi...",
-  "requirements": ["Pengalaman relevan", "Komunikasi baik"]
-}
+### 2. Buat database MySQL
+vPanel → **MySQL Databases** → buat database baru (mis. nama `infoloker`).
+Catat yang diberikan InfinityFree:
+
+| Yang dicatat            | Contoh                          |
+|-------------------------|---------------------------------|
+| MySQL Host name         | `sql123.infinityfree.com`       |
+| Database name           | `epiz_12345678_infoloker`       |
+| Database user           | `epiz_12345678`                 |
+| Database password       | (password yang kamu buat)       |
+
+### 3. Upload file ke `htdocs`
+vPanel → **Online File Manager** (atau FTP via FileZilla).
+Masuk ke folder **`htdocs`**, lalu upload **ISI** folder project ini
+(file `index.html`, folder `api`, `assets`, `database`, dst) **langsung ke `htdocs`**.
+
+✅ Benar: `htdocs/index.html`, `htdocs/api/...`
+❌ Salah: `htdocs/InfoLoker_FinalProject/index.html`  ← ini bikin 403
+
+Folder `database/` boleh diupload, tapi tidak wajib (hanya berisi SQL).
+
+### 4. Isi kredensial database
+Edit **`api/config.php`** (lewat File Manager) sesuai langkah 2:
+
+```php
+define('DB_HOST', 'sql123.infinityfree.com');
+define('DB_NAME', 'epiz_12345678_infoloker');
+define('DB_USER', 'epiz_12345678');
+define('DB_PASS', 'password_database_kamu');
 ```
 
+Saat sudah siap produksi, set juga `APP_DEBUG` ke `false`.
+
+### 5. Import tabel + data
+vPanel → **phpMyAdmin** → pilih database `epiz_..._infoloker` →
+tab **Import** → pilih file `database/schema.sql` → **Go**.
+
+Ini membuat 9 tabel + data contoh (10 perusahaan, 50 lowongan, beberapa akun demo).
+File ini **tidak** memakai `CREATE DATABASE` karena databasenya sudah dibuat di langkah 2.
+
+### 6. Coba buka
+Buka `https://namamu.infinityfreeapp.com/`.
+- Klik **Daftar** (pojok kanan atas) untuk membuat akun → tersimpan di tabel `users`.
+- **Masuk**, lalu klik nama kamu di pojok kanan atas → **Akun Saya** untuk
+  mengubah nama / email / no HP / password.
+
 ---
 
-## Teknologi
+## Akun Demo (setelah import schema.sql)
 
-- HTML5
-- CSS3 dengan Custom Properties
-- JavaScript ES6+ (Vanilla, tanpa framework)
-- JSON sebagai sumber data
+| Email                   | Password      | Role       |
+|-------------------------|---------------|------------|
+| `pelamar@infoloker.id`  | `Password123` | pelamar    |
+| `admin@infoloker.id`    | `Password123` | admin      |
+| `hr@gojek.id` dll.      | `Password123` | perusahaan |
+
+> Ganti / hapus akun demo ini sebelum dipakai sungguhan.
 
 ---
 
-## Catatan Pengembangan
+## Testing Lokal (XAMPP)
 
-- Logo perusahaan dapat ditambahkan di folder `assets/logos/[NamaPerusahaan].png`. Jika file tidak ditemukan, sistem akan menampilkan inisial nama perusahaan sebagai fallback.
-- Untuk menambah data lowongan, cukup tambahkan objek baru ke dalam file `job_portal_50_data.json` dengan mengikuti format yang sudah ada.
-- Seluruh output HTML diproses melalui fungsi `esc()` di `shared.js` untuk mencegah serangan XSS.
+1. Copy isi project ke `C:\xampp\htdocs\` (langsung ke root htdocs).
+2. Di `api/config.php`: `DB_HOST=localhost`, `DB_USER=root`, `DB_PASS=''`,
+   `DB_NAME=infoloker_db`.
+3. Buat database `infoloker_db` di phpMyAdmin, lalu import `database/schema.sql`.
+4. Buka `http://localhost/`.
+   (`api.js` memakai path absolut `/api`, jadi taruh project di root `htdocs`.
+   Jika harus di subfolder, ubah `API_BASE` di `api.js`.)
+
+---
+
+## Catatan Keamanan
+
+- Password di-hash dengan `password_hash()` (BCRYPT), diverifikasi `password_verify()`.
+- Semua query memakai **PDO prepared statements** (anti SQL injection).
+- Proteksi **CSRF**: token per session dikirim via header `X-CSRF-Token`.
+- Session di-`regenerate` setelah login (anti session fixation).
+- `api/.htaccess` memblokir akses langsung ke file internal; `uploads/.htaccess`
+  mematikan eksekusi PHP di folder upload.
+- Set `APP_DEBUG = false` di `config.php` saat produksi.
+
+---
+
+## Regenerasi schema (opsional)
+
+`database/schema.sql` sudah jadi. Bila ingin membuat ulang dari sumber data,
+jalankan `python3 database/generate_schema.py` (butuh file data JSON yang sesuai).

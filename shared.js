@@ -1,4 +1,5 @@
-const DATA_URL = './job_portal_50_data.json';
+const JOBS_API = '/api/jobs/list.php';
+const JOB_DETAIL_API = '/api/jobs/detail.php';
 
 const CAT_ICONS = [
   'IT', 'Design', 'Marketing', 'Data',
@@ -53,9 +54,22 @@ function daysAgo(dateStr) {
 }
 
 async function fetchJobs() {
-  const r = await fetch(DATA_URL, { cache: 'no-store' });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const data = await r.json();
-  if (!Array.isArray(data)) throw new Error('Format data tidak valid');
-  return data;
+  const r = await fetch(JOBS_API, { cache: 'no-store', credentials: 'same-origin' });
+  const body = await r.json().catch(() => null);
+  if (!r.ok || !body || body.success === false) {
+    throw new Error((body && body.error) || `HTTP ${r.status}`);
+  }
+  if (!Array.isArray(body.data)) throw new Error('Format data tidak valid');
+  return body.data;
+}
+
+async function fetchJob(id) {
+  const r = await fetch(`${JOB_DETAIL_API}?id=${encodeURIComponent(id)}`, {
+    cache: 'no-store', credentials: 'same-origin'
+  });
+  const body = await r.json().catch(() => null);
+  if (!r.ok || !body || body.success === false) {
+    throw new Error((body && body.error) || `HTTP ${r.status}`);
+  }
+  return body.data;
 }

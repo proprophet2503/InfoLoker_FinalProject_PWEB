@@ -20,8 +20,12 @@ function shuffle(arr) {
   return a;
 }
 
+function logoSlug(company) {
+  return String(company).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 function logoPath(company) {
-  return `./assets/logos/${company}.png`;
+  return `./assets/logos/${logoSlug(company)}.png`;
 }
 
 function logoImg(company, cls, fbCls) {

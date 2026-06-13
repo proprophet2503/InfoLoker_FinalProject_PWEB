@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard HR — InfoLoker</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .adm-wrap { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+  .adm-head h1 { font-size: 1.5rem; color:#111827; }
+  .adm-head p  { color:#6b7280; margin-bottom: 20px; }
+  .tabs { display:flex; gap:8px; margin-bottom:20px; border-bottom:1px solid #e5e7eb; }
+  .tab-btn { background:none; border:none; padding:10px 18px; font-weight:600; color:#6b7280;
+    cursor:pointer; border-bottom:3px solid transparent; }
+  .tab-btn.active { color:var(--brand,#0A66C2); border-bottom-color:var(--brand,#0A66C2); }
+  .tab-panel { display:none; } .tab-panel.active { display:block; }
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:24px; }
+  .stat-box { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:18px; text-align:center; box-shadow:0 1px 6px rgba(0,0,0,.05); }
+  .stat-box strong { display:block; font-size:1.8rem; color:var(--brand,#0A66C2); }
+  .stat-box span { font-size:.8rem; color:#6b7280; }
+  .adm-table { width:100%; border-collapse:collapse; font-size:.88rem; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 1px 6px rgba(0,0,0,.05); }
+  .adm-table th { background:var(--brand,#0A66C2); color:#fff; padding:11px 13px; text-align:left; }
+  .adm-table td { padding:10px 13px; border-bottom:1px solid #eee; vertical-align:middle; }
+  .badge-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.76rem; font-weight:600; }
+  .badge-pending{background:#fff3e0;color:#e65c00} .badge-review{background:#e3f2fd;color:#1565c0}
+  .badge-diterima{background:#e6f4ea;color:#1e7e34} .badge-ditolak{background:#fce8e8;color:#c62828}
+  .btn-sm { padding:6px 12px; border:none; border-radius:7px; font-weight:600; font-size:.8rem; cursor:pointer; }
+  .btn-view { background:#eef2ff; color:#3730a3; }
+  .btn-ok { background:#e6f4ea; color:#1e7e34; } .btn-no { background:#fce8e8; color:#c62828; }
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:flex-start; justify-content:center; z-index:100; overflow:auto; padding:30px 16px; }
+  .modal-bg.open { display:flex; }
+  .modal { background:#fff; border-radius:14px; max-width:720px; width:100%; padding:26px; }
+  .modal h2 { font-size:1.2rem; margin-bottom:4px; color:#111827; }
+  .det-sec { margin-top:18px; }
+  .det-sec h3 { font-size:.92rem; color:var(--brand,#0A66C2); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px; }
+  .det-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; font-size:.88rem; }
+  .det-grid div span { color:#6b7280; display:block; font-size:.74rem; }
+  .det-full { font-size:.88rem; white-space:pre-wrap; }
+  .file-link { display:inline-block; margin-right:10px; padding:7px 13px; background:#eef2ff; color:#3730a3; border-radius:7px; font-size:.82rem; font-weight:600; text-decoration:none; }
+  .decide-row { display:flex; gap:10px; margin-top:18px; align-items:center; flex-wrap:wrap; }
+  .decide-row input { flex:1; min-width:180px; padding:9px 12px; border:1.5px solid #e5e7eb; border-radius:8px; }
+  .field { margin-bottom:14px; } .field label { display:block; font-weight:600; font-size:.85rem; margin-bottom:5px; color:#374151; }
+  .field input, .field select, .field textarea { width:100%; padding:9px 12px; border:1.5px solid #e5e7eb; border-radius:8px; font-family:inherit; font-size:.9rem; }
+  .field textarea { min-height:80px; }
+  .form-2col { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+  .btn-primary { background:var(--brand,#0A66C2); color:#fff; border:none; padding:11px 22px; border-radius:9px; font-weight:700; cursor:pointer; }
+  .job-card-form { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:22px; max-width:760px; box-shadow:0 1px 6px rgba(0,0,0,.05); }
+  .msg { margin-top:12px; font-size:.86rem; } .msg.ok{color:#1e7e34} .msg.err{color:#c62828}
+  @media(max-width:640px){ .det-grid,.form-2col{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo-mark"><span class="logo-dot"></span>InfoLoker</a>
+    <div class="nav-auth" id="nav-auth"></div>
+  </div>
+</nav>
+
+<div class="adm-wrap">
+  <div class="adm-head">
+    <h1>Dashboard HR</h1>
+    <p id="greeting">Kelola lamaran dan lowongan perusahaan Anda.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="apps">Lamaran Masuk</button>
+    <button class="tab-btn" data-tab="job">Tambah Lowongan</button>
+  </div>
+
+  <!-- TAB: Lamaran -->
+  <div class="tab-panel active" id="panel-apps">
+    <div class="stats-grid">
+      <div class="stat-box"><strong id="s-total">—</strong><span>Total</span></div>
+      <div class="stat-box"><strong id="s-pending">—</strong><span>Menunggu</span></div>
+      <div class="stat-box"><strong id="s-review">—</strong><span>Direview</span></div>
+      <div class="stat-box"><strong id="s-diterima">—</strong><span>Diterima</span></div>
+      <div class="stat-box"><strong id="s-ditolak">—</strong><span>Ditolak</span></div>
+    </div>
+    <table class="adm-table">
+      <thead><tr><th>Pelamar</th><th>Posisi</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody id="tbl-apps"><tr><td colspan="5" style="text-align:center;color:#6b7280">Memuat...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- TAB: Tambah Lowongan -->
+  <div class="tab-panel" id="panel-job">
+    <div class="job-card-form">
+      <h2 style="font-size:1.1rem;margin-bottom:6px;color:#111827">Tambah Lowongan Baru</h2>
+      <p style="font-size:.85rem;color:#6b7280;margin-bottom:16px">Untuk perusahaan: <strong id="job-company">—</strong></p>
+      <form id="job-form">
+        <div class="field">
+          <label>Posisi *</label>
+          <select id="j-judul">
+            <option value="">— Pilih Posisi —</option>
+            <option>Frontend Developer</option>
+            <option>Backend Developer</option>
+            <option>UI/UX Designer</option>
+            <option>Digital Marketing Specialist</option>
+            <option>Data Analyst</option>
+            <option>Product Manager</option>
+            <option>Finance Analyst</option>
+            <option>HR Specialist</option>
+            <option>Operations Officer</option>
+            <option>Customer Support</option>
+          </select>
+        </div>
+        <div class="form-2col">
+          <div class="field"><label>Tipe</label>
+            <select id="j-tipe"><option>Full-time</option><option>Part-time</option><option>Remote</option><option>Freelance</option><option>Internship</option></select>
+          </div>
+          <div class="field"><label>Lokasi *</label><input type="text" id="j-lokasi" placeholder="Contoh: Jakarta"></div>
+        </div>
+        <div class="form-2col">
+          <div class="field"><label>Gaji Minimum (Rp)</label><input type="number" id="j-gaji-min" placeholder="5000000"></div>
+          <div class="field"><label>Gaji Maksimum (Rp)</label><input type="number" id="j-gaji-max" placeholder="8000000"></div>
+        </div>
+        <div class="field"><label>Jumlah Kebutuhan</label><input type="number" id="j-kebutuhan" value="1" min="1"></div>
+        <div class="field"><label>Deskripsi *</label><textarea id="j-deskripsi" placeholder="Deskripsi pekerjaan..."></textarea></div>
+        <div class="field"><label>Kualifikasi (satu per baris)</label><textarea id="j-kualifikasi" placeholder="Pengalaman relevan&#10;Komunikasi baik"></textarea></div>
+        <button type="submit" class="btn-primary">Simpan Lowongan</button>
+        <div class="msg" id="job-msg"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detail lamaran -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script src="./shared.js"></script>
+<script src="./api.js"></script>
+<script src="./auth.js"></script>
+<script>
+let apps = [];
+
+function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+function renderStats() {
+  document.getElementById('s-total').textContent    = apps.length;
+  document.getElementById('s-pending').textContent  = apps.filter(a=>a.status==='pending').length;
+  document.getElementById('s-review').textContent   = apps.filter(a=>a.status==='review').length;
+  document.getElementById('s-diterima').textContent = apps.filter(a=>a.status==='diterima').length;
+  document.getElementById('s-ditolak').textContent  = apps.filter(a=>a.status==='ditolak').length;
+}
+
+function renderApps() {
+  const tb = document.getElementById('tbl-apps');
+  if (!apps.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6b7280">Belum ada lamaran masuk</td></tr>';
+    return;
+  }
+  tb.innerHTML = apps.map(a => `
+    <tr>
+      <td><strong>${esc(a.pelamar_nama || '—')}</strong><br><span style="font-size:.78rem;color:#6b7280">${esc(a.pelamar_email || '')}</span></td>
+      <td>${esc(a.judul)}</td>
+      <td>${fmtDate(a.submitted_at)}</td>
+      <td><span class="badge-status badge-${esc(a.status)}">${esc(cap(a.status))}</span></td>
+      <td><button class="btn-sm btn-view" onclick="openDetail(${a.id})">Lihat</button></td>
+    </tr>`).join('');
+}
+
+async function loadApps() {
+  try {
+    const res = await api.get('/admin/applications.php');
+    apps = res.data || [];
+  } catch (err) {
+    document.getElementById('tbl-apps').innerHTML =
+      `<tr><td colspan="5" style="text-align:center;color:#c62828">Gagal memuat: ${esc(err.message)}</td></tr>`;
+    return;
+  }
+  renderStats();
+  renderApps();
+}
+
+const modalBg = document.getElementById('modal-bg');
+function closeModal(){ modalBg.classList.remove('open'); }
+modalBg.addEventListener('click', e => { if (e.target === modalBg) closeModal(); });
+
+function row(label, val){ return val ? `<div><span>${esc(label)}</span>${esc(val)}</div>` : ''; }
+function yn(v){ return Number(v) ? 'Ya' : 'Tidak'; }
+
+async function openDetail(id) {
+  modalBg.classList.add('open');
+  const m = document.getElementById('modal');
+  m.innerHTML = '<p style="color:#6b7280">Memuat detail...</p>';
+  let d;
+  try {
+    const res = await api.get('/admin/application_detail.php?id=' + id);
+    d = res.data;
+  } catch (err) {
+    m.innerHTML = `<p style="color:#c62828">Gagal memuat: ${esc(err.message)}</p>
+      <button class="btn-sm btn-view" onclick="closeModal()">Tutup</button>`;
+    return;
+  }
+
+  const dp = d.data_pribadi || {}, lb = d.latar_belakang || {},
+        sd = d.surat_dokumen || {}, pt = d.pertanyaan_tambahan || {}, h = d.lamaran || {};
+
+  const files = [
+    sd.cv_path ? `<a class="file-link" href="./${esc(sd.cv_path)}" target="_blank">📄 Unduh CV</a>` : '',
+    sd.portfolio_path ? `<a class="file-link" href="./${esc(sd.portfolio_path)}" target="_blank">🗂 Unduh Portfolio</a>` : '',
+  ].join('') || '<span style="color:#6b7280;font-size:.85rem">Tidak ada file diunggah.</span>';
+
+  m.innerHTML = `
+    <h2>${esc(h.judul || '')} — ${esc(h.nama_perusahaan || '')}</h2>
+    <p style="color:#6b7280;font-size:.85rem">Ref: ${esc(h.no_referensi||'')} ·
+       Status: <span class="badge-status badge-${esc(h.status)}">${esc(cap(h.status))}</span></p>
+
+    <div class="det-sec"><h3>1. Data Pribadi</h3><div class="det-grid">
+      ${row('Nama', dp.nama)}${row('Email', dp.email)}${row('No. HP', dp.no_hp)}
+      ${row('Kota', dp.kota)}${row('LinkedIn', dp.linkedin_url)}${row('Portfolio URL', dp.portfolio_url)}
+    </div></div>
+
+    <div class="det-sec"><h3>2. Latar Belakang Profesional</h3><div class="det-grid">
+      ${row('Pengalaman', lb.pengalaman)}${row('Pendidikan', lb.pendidikan)}
+      ${row('Universitas', lb.universitas)}${row('Jurusan', lb.jurusan)}
+      ${row('Gaji Harapan', lb.gaji_harapan)}${row('Ketersediaan', lb.ketersediaan)}
+      ${row('Preferensi Kerja', lb.work_pref)}${row('Perusahaan Sebelumnya', lb.prev_company)}
+    </div></div>
+
+    <div class="det-sec"><h3>3. Surat & Dokumen</h3>
+      ${sd.cover_letter ? `<div class="det-full" style="margin-bottom:10px">${esc(sd.cover_letter)}</div>`:'<p style="color:#6b7280;font-size:.85rem">Tanpa cover letter.</p>'}
+      ${files}
+    </div>
+
+    <div class="det-sec"><h3>4. Pertanyaan Tambahan</h3><div class="det-grid">
+      <div><span>Bersedia relokasi</span>${yn(pt.relokasi)}</div>
+      <div><span>Bersedia lembur</span>${yn(pt.lembur)}</div>
+      <div><span>Dari referral</span>${yn(pt.referral)}</div>
+      ${row('Sumber Info', pt.sumber_info)}
+    </div>${pt.pesan_tambahan ? `<div style="margin-top:8px"><span style="color:#6b7280;font-size:.74rem">Pesan</span><div class="det-full">${esc(pt.pesan_tambahan)}</div></div>`:''}</div>
+
+    <div class="decide-row">
+      <input type="text" id="catatan" placeholder="Catatan untuk pelamar (opsional)" value="${esc(h.catatan_hr||'')}">
+      <button class="btn-sm btn-ok" onclick="decide(${id},'diterima')">✓ Terima</button>
+      <button class="btn-sm btn-no" onclick="decide(${id},'ditolak')">✕ Tolak</button>
+      <button class="btn-sm btn-view" onclick="closeModal()">Tutup</button>
+    </div>
+    <div class="msg" id="decide-msg"></div>
+  `;
+}
+
+async function decide(id, status) {
+  const catatan = document.getElementById('catatan')?.value || '';
+  const msg = document.getElementById('decide-msg');
+  msg.className = 'msg'; msg.textContent = 'Menyimpan...';
+  try {
+    await api.post('/admin/application_status.php', { id, status, catatan_hr: catatan });
+    msg.className = 'msg ok';
+    msg.textContent = status === 'diterima' ? 'Pelamar diterima.' : 'Pelamar ditolak.';
+    await loadApps();
+    setTimeout(closeModal, 700);
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = 'Gagal: ' + err.message;
+  }
+}
+
+// ---- Tabs ----
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---- Tambah lowongan ----
+document.getElementById('job-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('job-msg');
+  msg.className = 'msg'; msg.textContent = 'Menyimpan...';
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const payload = {
+    judul: v('j-judul'), tipe: v('j-tipe'), lokasi: v('j-lokasi'),
+    gaji_min: v('j-gaji-min'), gaji_max: v('j-gaji-max'),
+    jumlah_kebutuhan: v('j-kebutuhan'),
+    deskripsi: v('j-deskripsi'), kualifikasi: v('j-kualifikasi'),
+  };
+  try {
+    await api.post('/admin/job_create.php', payload);
+    msg.className = 'msg ok';
+    msg.textContent = 'Lowongan berhasil ditambahkan.';
+    e.target.reset();
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = 'Gagal: ' + err.message;
+  }
+});
+
+(async function init() {
+  const user = await authUtils.requireAuth('perusahaan');
+  if (!user) return;
+  const company = user.nama_perusahaan || user.nama || 'Perusahaan';
+  document.getElementById('greeting').textContent = `Halo, ${company}! Kelola lamaran dan lowongan perusahaan Anda.`;
+  document.getElementById('job-company').textContent = company;
+  await loadApps();
+})();
+</script>
+</body>
+</html>

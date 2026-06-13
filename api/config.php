@@ -15,9 +15,9 @@
 
 // ---- Kredensial database (WAJIB DIISI) ------------------------------
 define('DB_HOST', 'sqlXXX.infinityfree.com');
-define('DB_NAME', 'epiz_XXXXXXXX_infoloker');
-define('DB_USER', 'epiz_XXXXXXXX');
-define('DB_PASS', 'GANTI_DENGAN_PASSWORD_DB');
+define('DB_NAME', ' if0_42168361_XXX');
+define('DB_USER', 'if0_42168361');
+define('DB_PASS', 'jeremyloveseif');
 define('DB_CHARSET', 'utf8mb4');
 
 // ---- Pengaturan aplikasi --------------------------------------------

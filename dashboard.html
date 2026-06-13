@@ -50,8 +50,8 @@
 
   <div class="section-title">Riwayat Lamaran</div>
   <table class="lamaran-table">
-    <thead><tr><th>Posisi</th><th>Perusahaan</th><th>Tanggal Lamar</th><th>Status</th><th>No. Referensi</th></tr></thead>
-    <tbody id="tbl-lamaran"><tr><td colspan="5" style="text-align:center;color:#6b7280">Memuat data...</td></tr></tbody>
+    <thead><tr><th>Posisi</th><th>Perusahaan</th><th>Tanggal Lamar</th><th>Status</th><th>Hasil / Catatan</th><th>No. Referensi</th></tr></thead>
+    <tbody id="tbl-lamaran"><tr><td colspan="6" style="text-align:center;color:#6b7280">Memuat data...</td></tr></tbody>
   </table>
 </div>
 
@@ -70,12 +70,20 @@
     const res = await api.get('/lamaran/mine.php');
     data = res.data || [];
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#c62828">Gagal memuat: ${esc(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#c62828">Gagal memuat: ${esc(err.message)}</td></tr>`;
     return;
   }
 
+  const hasilText = r => {
+    if (r.catatan_hr) return esc(r.catatan_hr);
+    if (r.status === 'diterima') return '🎉 Selamat, Anda diterima!';
+    if (r.status === 'ditolak')  return 'Mohon maaf, belum berhasil kali ini.';
+    if (r.status === 'review')   return 'Lamaran sedang ditinjau admin.';
+    return 'Menunggu ditinjau.';
+  };
+
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6b7280">Belum ada lamaran</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6b7280">Belum ada lamaran</td></tr>';
   } else {
     tbody.innerHTML = data.map(r => `
       <tr>
@@ -83,6 +91,7 @@
         <td>${esc(r.nama_perusahaan)}</td>
         <td>${fmtDate(r.submitted_at)}</td>
         <td><span class="badge-status badge-${esc(r.status)}">${esc(r.status.charAt(0).toUpperCase() + r.status.slice(1))}</span></td>
+        <td style="font-size:.85rem;color:#374151">${hasilText(r)}</td>
         <td style="font-family:monospace;font-size:.8rem">${esc(r.no_referensi)}</td>
       </tr>`).join('');
   }

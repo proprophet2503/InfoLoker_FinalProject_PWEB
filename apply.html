@@ -144,14 +144,43 @@ async function submitApplication() {
   btn.disabled = true;
   btn.textContent = 'Mengirim...';
 
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const chk = id => (document.getElementById(id)?.checked ? 1 : 0);
+
   const fd = new FormData();
   fd.append('lowongan_id', currentJobId);
-  fd.append('cover_letter', document.getElementById('cover-letter')?.value || '');
-  fd.append('pengalaman', document.getElementById('experience')?.value || '');
-  fd.append('sumber_info', document.getElementById('source')?.value || '');
-  fd.append('skills', skills.join('\n'));
+
+  // Bagian 1: Data Pribadi
+  fd.append('nama', val('full-name'));
+  fd.append('email', val('email'));
+  fd.append('no_hp', val('phone'));
+  fd.append('kota', val('city'));
+  fd.append('linkedin_url', val('linkedin'));
+  fd.append('portfolio_url', val('portfolio-url'));
+
+  // Bagian 2: Latar Belakang Profesional
+  fd.append('pengalaman', val('experience'));
+  fd.append('pendidikan', val('education'));
+  fd.append('universitas', val('university'));
+  fd.append('jurusan', val('major'));
+  fd.append('gaji_harapan', val('salary-exp'));
+  fd.append('ketersediaan', val('availability'));
+  fd.append('work_pref', val('work-pref'));
+  fd.append('prev_company', val('prev-company'));
+
+  // Bagian 3: Surat & Dokumen
+  fd.append('cover_letter', val('cover-letter'));
   const cv = document.getElementById('cv-file')?.files?.[0];
   if (cv) fd.append('cv', cv);
+  const porto = document.getElementById('porto-file')?.files?.[0];
+  if (porto) fd.append('portfolio', porto);
+
+  // Bagian 4: Pertanyaan Tambahan
+  fd.append('relokasi', chk('relocation'));
+  fd.append('lembur', chk('overtime'));
+  fd.append('referral', chk('referral'));
+  fd.append('sumber_info', val('source'));
+  fd.append('pesan_tambahan', val('extra'));
 
   try {
     await api.postForm('/lamaran/create.php', fd);
@@ -347,13 +376,6 @@ async function init() {
                 <label>Perusahaan Sebelumnya</label>
                 <input type="text" id="prev-company" placeholder="Nama perusahaan terakhir">
               </div>
-            </div>
-            <div class="field" style="margin-top:14px">
-              <label>Keahlian / Skills</label>
-              <div class="skills-wrap" id="skills-wrap" onclick="document.getElementById('skills-inp').focus()">
-                <input type="text" id="skills-inp" class="skills-input" placeholder="Ketik lalu Enter..." autocomplete="off">
-              </div>
-              <span class="skills-hint">Tekan Enter atau koma untuk menambah skill</span>
             </div>
           </div>
 

@@ -41,17 +41,6 @@
         <input type="tel" id="no_hp" placeholder="08xxxxxxxxxx">
       </div>
       <div class="form-group">
-        <label>Daftar sebagai</label>
-        <select id="role" required>
-          <option value="pelamar">Pencari Kerja (Pelamar)</option>
-          <option value="perusahaan">Perusahaan / Employer</option>
-        </select>
-      </div>
-      <div class="form-group" id="field-perusahaan">
-        <label>Nama Perusahaan</label>
-        <input type="text" id="nama_perusahaan" placeholder="PT. Nama Perusahaan">
-      </div>
-      <div class="form-group">
         <label>Password</label>
         <input type="password" id="password" placeholder="Min. 8 karakter + angka" required autocomplete="new-password">
       </div>
@@ -70,11 +59,6 @@
 <script>
 authUtils.ready.then(user => { if (user) window.location.href = 'index.html'; });
 
-document.getElementById('role').addEventListener('change', e => {
-  document.getElementById('field-perusahaan').style.display =
-    e.target.value === 'perusahaan' ? 'block' : 'none';
-});
-
 document.getElementById('form-register').addEventListener('submit', async e => {
   e.preventDefault();
   const errEl = document.getElementById('err-msg');
@@ -85,15 +69,12 @@ document.getElementById('form-register').addEventListener('submit', async e => {
   const cpwd = document.getElementById('confirm_password').value;
   if (pwd !== cpwd) { errEl.textContent = 'Password tidak cocok.'; errEl.style.display = 'block'; return; }
 
-  const role = document.getElementById('role').value;
   const body = {
     nama: document.getElementById('nama').value,
     email: document.getElementById('email').value,
     password: pwd,
-    role,
     no_hp: document.getElementById('no_hp').value || undefined,
   };
-  if (role === 'perusahaan') body.nama_perusahaan = document.getElementById('nama_perusahaan').value;
 
   btn.disabled = true; btn.textContent = 'Memproses...';
   try {

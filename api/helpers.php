@@ -132,5 +132,15 @@ function valid_email(string $email): bool
     return (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 
+// ---- Perusahaan (HR) -------------------------------------------------
+/** ID perusahaan milik user HR yang login, atau null bila tidak ada. */
+function my_company_id(int $userId): ?int
+{
+    $s = db()->prepare('SELECT id FROM perusahaan_profiles WHERE user_id = ? LIMIT 1');
+    $s->execute([$userId]);
+    $id = $s->fetchColumn();
+    return $id !== false ? (int) $id : null;
+}
+
 // Setiap endpoint memulai session otomatis.
 start_session();

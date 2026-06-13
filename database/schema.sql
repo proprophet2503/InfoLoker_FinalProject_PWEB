@@ -7,7 +7,11 @@
 --   * Do NOT create the database here. Create it first in vPanel
 --     ("MySQL Databases"), then import THIS file into that database
 --     via phpMyAdmin. There is intentionally no CREATE DATABASE / USE.
---   * Demo login for every seeded account:  password = Password123
+--   * Saat re-import: DROP semua tabel lama dulu (IF NOT EXISTS akan
+--     melewati tabel yang masih ada).
+--   * Demo login untuk semua akun seed:  password = Password123
+--   * Hanya ada 2 role: 'pelamar' (daftar sendiri) & 'perusahaan'
+--     (akun HR, sudah disediakan langsung dari schema ini).
 -- =====================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -18,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
   nama        VARCHAR(100)  NOT NULL,
   email       VARCHAR(150)  NOT NULL,
   password    VARCHAR(255)  NOT NULL,
-  role        ENUM('admin','pelamar','perusahaan') NOT NULL DEFAULT 'pelamar',
+  role        ENUM('pelamar','perusahaan') NOT NULL DEFAULT 'pelamar',
   no_hp       VARCHAR(20)   NULL,
   is_active   TINYINT(1)    NOT NULL DEFAULT 1,
   created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,24 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uq_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. PELAMAR_PROFILES (1:1 users) -------------------------------------
-CREATE TABLE IF NOT EXISTS pelamar_profiles (
-  id            INT           NOT NULL AUTO_INCREMENT,
-  user_id       INT           NOT NULL,
-  foto          VARCHAR(255)  NULL,
-  headline      VARCHAR(255)  NULL,
-  about         TEXT          NULL,
-  kota          VARCHAR(100)  NULL,
-  tanggal_lahir DATE          NULL,
-  cv_path       VARCHAR(255)  NULL,
-  linkedin_url  VARCHAR(255)  NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_user (user_id),
-  CONSTRAINT fk_pp_user FOREIGN KEY (user_id)
-    REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 3. PERUSAHAAN_PROFILES (1:1 users) ----------------------------------
+-- 2. PERUSAHAAN_PROFILES (1:1 users role=perusahaan) ------------------
 CREATE TABLE IF NOT EXISTS perusahaan_profiles (
   id               INT           NOT NULL AUTO_INCREMENT,
   user_id          INT           NOT NULL,
@@ -52,9 +39,7 @@ CREATE TABLE IF NOT EXISTS perusahaan_profiles (
   logo             VARCHAR(255)  NULL,
   deskripsi        TEXT          NULL,
   industri         VARCHAR(100)  NULL,
-  ukuran           VARCHAR(50)   NULL,
   website          VARCHAR(255)  NULL,
-  kota             VARCHAR(100)  NULL,
   is_verified      TINYINT(1)    NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   UNIQUE KEY uq_user (user_id),
@@ -62,7 +47,7 @@ CREATE TABLE IF NOT EXISTS perusahaan_profiles (
     REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. LOWONGAN ---------------------------------------------------------
+-- 3. LOWONGAN ---------------------------------------------------------
 CREATE TABLE IF NOT EXISTS lowongan (
   id               INT           NOT NULL AUTO_INCREMENT,
   perusahaan_id    INT           NOT NULL,
@@ -75,8 +60,6 @@ CREATE TABLE IF NOT EXISTS lowongan (
   gaji_max         BIGINT        NULL,
   deskripsi        TEXT          NOT NULL,
   kualifikasi      TEXT          NULL COMMENT 'Persyaratan, satu per baris',
-  benefit          TEXT          NULL COMMENT 'Benefit, satu per baris',
-  deadline         DATE          NULL,
   jumlah_kebutuhan INT           NOT NULL DEFAULT 1,
   status           ENUM('pending','aktif','ditutup','ditolak')
                                  NOT NULL DEFAULT 'aktif',
@@ -92,20 +75,16 @@ CREATE TABLE IF NOT EXISTS lowongan (
     REFERENCES perusahaan_profiles(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. LAMARAN ----------------------------------------------------------
+-- 4. LAMARAN (record induk: status + referensi + relasi) --------------
+--    Data input pelamar dipecah ke 4 tabel anak (4a–4d) sesuai 4
+--    bagian formulir lamaran.
 CREATE TABLE IF NOT EXISTS lamaran (
   id            INT           NOT NULL AUTO_INCREMENT,
   lowongan_id   INT           NOT NULL,
   pelamar_id    INT           NOT NULL,
-  cover_letter  TEXT          NULL,
-  cv_path       VARCHAR(255)  NULL,
-  foto_path     VARCHAR(255)  NULL,
-  skills        TEXT          NULL COMMENT 'Skills, satu per baris',
-  pengalaman    TEXT          NULL,
-  sumber_info   VARCHAR(100)  NULL,
   status        ENUM('pending','review','diterima','ditolak')
                               NOT NULL DEFAULT 'pending',
-  catatan_hr    TEXT          NULL,
+  catatan_hr    TEXT          NULL COMMENT 'Catatan/keputusan dari admin HR',
   no_referensi  VARCHAR(50)   NOT NULL,
   submitted_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP     NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -120,69 +99,65 @@ CREATE TABLE IF NOT EXISTS lamaran (
     REFERENCES users(id)    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. BOOKMARKS --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS bookmarks (
-  id          INT       NOT NULL AUTO_INCREMENT,
-  user_id     INT       NOT NULL,
-  lowongan_id INT       NOT NULL,
-  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_bookmark (user_id, lowongan_id),
-  CONSTRAINT fk_bk_user     FOREIGN KEY (user_id)
-    REFERENCES users(id)    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_bk_lowongan FOREIGN KEY (lowongan_id)
-    REFERENCES lowongan(id) ON DELETE CASCADE ON UPDATE CASCADE
+-- 4a. LAMARAN_DATA_PRIBADI (Bagian 1 formulir) ------------------------
+CREATE TABLE IF NOT EXISTS lamaran_data_pribadi (
+  lamaran_id    INT           NOT NULL,
+  nama          VARCHAR(150)  NOT NULL,
+  email         VARCHAR(150)  NOT NULL,
+  no_hp         VARCHAR(30)   NULL,
+  kota          VARCHAR(100)  NULL,
+  linkedin_url  VARCHAR(255)  NULL,
+  portfolio_url VARCHAR(255)  NULL,
+  PRIMARY KEY (lamaran_id),
+  CONSTRAINT fk_dp_lamaran FOREIGN KEY (lamaran_id)
+    REFERENCES lamaran(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. SKILLS -----------------------------------------------------------
-CREATE TABLE IF NOT EXISTS skills (
-  id          INT          NOT NULL AUTO_INCREMENT,
-  pelamar_id  INT          NOT NULL,
-  nama_skill  VARCHAR(100) NOT NULL,
-  PRIMARY KEY (id),
-  INDEX idx_pelamar (pelamar_id),
-  CONSTRAINT fk_sk_pelamar FOREIGN KEY (pelamar_id)
-    REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+-- 4b. LAMARAN_LATAR_BELAKANG (Bagian 2 formulir) ----------------------
+CREATE TABLE IF NOT EXISTS lamaran_latar_belakang (
+  lamaran_id    INT           NOT NULL,
+  pengalaman    VARCHAR(100)  NULL,
+  pendidikan    VARCHAR(100)  NULL,
+  universitas   VARCHAR(200)  NULL,
+  jurusan       VARCHAR(150)  NULL,
+  gaji_harapan  VARCHAR(50)   NULL,
+  ketersediaan  VARCHAR(100)  NULL,
+  work_pref     VARCHAR(100)  NULL,
+  prev_company  VARCHAR(150)  NULL,
+  PRIMARY KEY (lamaran_id),
+  CONSTRAINT fk_lb_lamaran FOREIGN KEY (lamaran_id)
+    REFERENCES lamaran(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. PENGALAMAN_KERJA -------------------------------------------------
-CREATE TABLE IF NOT EXISTS pengalaman_kerja (
-  id          INT          NOT NULL AUTO_INCREMENT,
-  pelamar_id  INT          NOT NULL,
-  posisi      VARCHAR(150) NOT NULL,
-  perusahaan  VARCHAR(150) NOT NULL,
-  mulai       DATE         NOT NULL,
-  selesai     DATE         NULL COMMENT 'NULL = masih aktif',
-  deskripsi   TEXT         NULL,
-  PRIMARY KEY (id),
-  INDEX idx_pelamar (pelamar_id),
-  CONSTRAINT fk_px_pelamar FOREIGN KEY (pelamar_id)
-    REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+-- 4c. LAMARAN_SURAT_DOKUMEN (Bagian 3 formulir) -----------------------
+CREATE TABLE IF NOT EXISTS lamaran_surat_dokumen (
+  lamaran_id      INT           NOT NULL,
+  cover_letter    TEXT          NULL,
+  cv_path         VARCHAR(255)  NULL,
+  portfolio_path  VARCHAR(255)  NULL COMMENT 'File portofolio tersimpan (mis. PDF)',
+  PRIMARY KEY (lamaran_id),
+  CONSTRAINT fk_sd_lamaran FOREIGN KEY (lamaran_id)
+    REFERENCES lamaran(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. PENDIDIKAN -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS pendidikan (
-  id           INT     NOT NULL AUTO_INCREMENT,
-  pelamar_id   INT     NOT NULL,
-  institusi    VARCHAR(200) NOT NULL,
-  jurusan      VARCHAR(150) NULL,
-  jenjang      ENUM('SMA','D3','S1','S2','S3') NOT NULL DEFAULT 'S1',
-  tahun_masuk  YEAR    NOT NULL,
-  tahun_lulus  YEAR    NULL COMMENT 'NULL = belum lulus',
-  PRIMARY KEY (id),
-  INDEX idx_pelamar (pelamar_id),
-  CONSTRAINT fk_pd_pelamar FOREIGN KEY (pelamar_id)
-    REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+-- 4d. LAMARAN_PERTANYAAN_TAMBAHAN (Bagian 4 formulir) -----------------
+CREATE TABLE IF NOT EXISTS lamaran_pertanyaan_tambahan (
+  lamaran_id      INT           NOT NULL,
+  relokasi        TINYINT(1)    NOT NULL DEFAULT 0,
+  lembur          TINYINT(1)    NOT NULL DEFAULT 0,
+  referral        TINYINT(1)    NOT NULL DEFAULT 0,
+  sumber_info     VARCHAR(100)  NULL,
+  pesan_tambahan  TEXT          NULL,
+  PRIMARY KEY (lamaran_id),
+  CONSTRAINT fk_pt_lamaran FOREIGN KEY (lamaran_id)
+    REFERENCES lamaran(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =================== SEED DATA ===================
+-- Demo password untuk SEMUA akun di bawah = Password123
 
--- Demo password for ALL accounts below = Password123
-
-INSERT IGNORE INTO users (id, nama, email, password, role) VALUES
-  (1, 'Admin InfoLoker', 'admin@infoloker.id', '$2y$10$dXZnKtr3YVB6Zylaw25M9OpfnzwOEFpqtIrNzZhKMrKy9BmuJL5CW', 'admin');
-
+-- Akun perusahaan (HR). Setiap perusahaan punya 1 akun HR.
 INSERT IGNORE INTO users (id, nama, email, password, role) VALUES
   (2, 'Bank BCA Recruitment', 'hr@bankbca.id', '$2y$10$dXZnKtr3YVB6Zylaw25M9OpfnzwOEFpqtIrNzZhKMrKy9BmuJL5CW', 'perusahaan'),
   (3, 'Bank Mandiri Recruitment', 'hr@bankmandiri.id', '$2y$10$dXZnKtr3YVB6Zylaw25M9OpfnzwOEFpqtIrNzZhKMrKy9BmuJL5CW', 'perusahaan'),
@@ -195,22 +170,21 @@ INSERT IGNORE INTO users (id, nama, email, password, role) VALUES
   (10, 'Tokopedia Recruitment', 'hr@tokopedia.id', '$2y$10$dXZnKtr3YVB6Zylaw25M9OpfnzwOEFpqtIrNzZhKMrKy9BmuJL5CW', 'perusahaan'),
   (11, 'Traveloka Recruitment', 'hr@traveloka.id', '$2y$10$dXZnKtr3YVB6Zylaw25M9OpfnzwOEFpqtIrNzZhKMrKy9BmuJL5CW', 'perusahaan');
 
+-- Akun pelamar demo.
 INSERT IGNORE INTO users (id, nama, email, password, role, no_hp) VALUES
   (12, 'Budi Pelamar', 'pelamar@infoloker.id', '$2y$10$dXZnKtr3YVB6Zylaw25M9OpfnzwOEFpqtIrNzZhKMrKy9BmuJL5CW', 'pelamar', '081234567890');
 
-INSERT IGNORE INTO perusahaan_profiles (id, user_id, nama_perusahaan, logo, deskripsi, industri, is_verified) VALUES
-  (1, 2, 'Bank BCA', 'Bank BCA.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (2, 3, 'Bank Mandiri', 'Bank Mandiri.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (3, 4, 'Bukalapak', 'Bukalapak.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (4, 5, 'DANA', 'DANA.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (5, 6, 'Gojek', 'Gojek.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (6, 7, 'OVO', 'OVO.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (7, 8, 'Shopee', 'Shopee.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (8, 9, 'Telkom Indonesia', 'Telkom Indonesia.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (9, 10, 'Tokopedia', 'Tokopedia.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1),
-  (10, 11, 'Traveloka', 'Traveloka.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 1);
-
-INSERT IGNORE INTO pelamar_profiles (user_id, headline, kota) VALUES (12, 'Fresh Graduate', 'Jakarta');
+INSERT IGNORE INTO perusahaan_profiles (id, user_id, nama_perusahaan, logo, deskripsi, industri, website, is_verified) VALUES
+  (1, 2, 'Bank BCA', 'bank-bca.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.bankbca.id', 1),
+  (2, 3, 'Bank Mandiri', 'bank-mandiri.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.bankmandiri.id', 1),
+  (3, 4, 'Bukalapak', 'bukalapak.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.bukalapak.id', 1),
+  (4, 5, 'DANA', 'dana.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.dana.id', 1),
+  (5, 6, 'Gojek', 'gojek.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.gojek.id', 1),
+  (6, 7, 'OVO', 'ovo.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.ovo.id', 1),
+  (7, 8, 'Shopee', 'shopee.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.shopee.id', 1),
+  (8, 9, 'Telkom Indonesia', 'telkom-indonesia.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.telkomindonesia.id', 1),
+  (9, 10, 'Tokopedia', 'tokopedia.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.tokopedia.id', 1),
+  (10, 11, 'Traveloka', 'traveloka.png', 'Perusahaan terkemuka di Indonesia.', 'Teknologi', 'www.traveloka.id', 1);
 
 INSERT IGNORE INTO lowongan
   (id, perusahaan_id, judul, kategori, tipe, lokasi, gaji_min, gaji_max, deskripsi, kualifikasi, posted_at, status)

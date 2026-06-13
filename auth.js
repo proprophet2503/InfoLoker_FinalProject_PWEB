@@ -58,7 +58,9 @@
       if (currentUser) {
         const initial = escapeHtml((currentUser.nama || '?').charAt(0).toUpperCase());
         const dashLink = currentUser.role === 'pelamar'
-          ? `<a href="dashboard.html">Dashboard</a>` : '';
+          ? `<a href="dashboard.html">Dashboard</a>`
+          : (currentUser.role === 'perusahaan'
+            ? `<a href="admin.html">Dashboard HR</a>` : '');
         el.innerHTML = `
           <div class="na-menu">
             <button class="na-trigger" type="button" aria-haspopup="true" aria-expanded="false">

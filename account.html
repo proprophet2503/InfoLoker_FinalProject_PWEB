@@ -93,6 +93,15 @@ function show(el, text, ok) {
   document.getElementById('no_hp').value = user.no_hp || '';
   document.getElementById('role-badge').textContent = user.role;
 
+  // HR perusahaan: logo InfoLoker menuju dashboard admin, bukan index pelamar;
+  // dan hilangkan link "Lowongan" yang hanya relevan untuk pelamar.
+  if (user.role === 'perusahaan') {
+    const logo = document.querySelector('.logo-mark');
+    if (logo) logo.setAttribute('href', 'admin.html');
+    const navLinks = document.querySelector('.nav-links');
+    if (navLinks) navLinks.remove();
+  }
+
   document.getElementById('form-profile').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = document.getElementById('profile-btn');

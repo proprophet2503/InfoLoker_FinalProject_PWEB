@@ -54,6 +54,11 @@
 
   function renderNav() {
     injectStyles();
+    // HR perusahaan: logo menuju dashboard admin, sembunyikan link Lowongan.
+    if (currentUser && currentUser.role === 'perusahaan') {
+      document.querySelectorAll('.logo-mark').forEach(a => a.setAttribute('href', 'admin.html'));
+      document.querySelectorAll('.nav-links').forEach(el => { el.style.display = 'none'; });
+    }
     document.querySelectorAll('.nav-auth').forEach(el => {
       if (currentUser) {
         const initial = escapeHtml((currentUser.nama || '?').charAt(0).toUpperCase());

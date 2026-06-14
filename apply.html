@@ -84,7 +84,7 @@ function attachSkillInput() {
   });
 }
 
-function handleFileDrop(zone, input, chosen) {
+function handleFileDrop(zone, input, chosen, delBtn) {
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {
@@ -96,33 +96,28 @@ function handleFileDrop(zone, input, chosen) {
       const dt = new DataTransfer();
       dt.items.add(file);
       input.files = dt.files;
-      showFile(file, chosen, input);
+      showFile(file, chosen, delBtn);
     }
   });
   input.addEventListener('change', () => {
-    if (input.files[0]) showFile(input.files[0], chosen, input);
+    if (input.files[0]) showFile(input.files[0], chosen, delBtn);
   });
+  // Tombol hapus di samping label — di luar overlay input file, jadi bisa diklik.
+  if (delBtn) delBtn.addEventListener('click', () => clearFile(input, chosen, delBtn));
 }
 
-function showFile(file, chosen, input) {
+function showFile(file, chosen, delBtn) {
   const mb = (file.size / 1048576).toFixed(1);
-  chosen.innerHTML = '';
-  const label = document.createElement('span');
-  label.textContent = `✓ ${file.name} (${mb} MB)`;
-  const del = document.createElement('button');
-  del.type = 'button';
-  del.className = 'file-remove';
-  del.textContent = '✕ Hapus';
-  del.addEventListener('click', () => clearFile(input, chosen));
-  chosen.appendChild(label);
-  chosen.appendChild(del);
+  chosen.textContent = `✓ ${file.name} (${mb} MB)`;
   chosen.classList.add('show');
+  if (delBtn) delBtn.hidden = false;
 }
 
-function clearFile(input, chosen) {
+function clearFile(input, chosen, delBtn) {
   input.value = '';
-  chosen.innerHTML = '';
+  chosen.textContent = '';
   chosen.classList.remove('show');
+  if (delBtn) delBtn.hidden = true;
 }
 
 function validateAndSubmit(e) {
@@ -416,7 +411,10 @@ async function init() {
                 <span class="hint">Tulis dengan tulus dan spesifik. Minimal 100 karakter.</span>
               </div>
               <div class="field">
-                <label>Upload CV / Resume <span class="req">*</span></label>
+                <div class="upload-head">
+                  <label>Upload CV / Resume <span class="req">*</span></label>
+                  <button type="button" id="cv-del" class="file-remove" hidden>✕ Hapus</button>
+                </div>
                 <div class="file-drop" id="cv-zone">
                   <input type="file" id="cv-file" accept=".pdf,.doc,.docx">
                   <span class="file-drop-icon">📄</span>
@@ -426,7 +424,10 @@ async function init() {
                 </div>
               </div>
               <div class="field">
-                <label>Upload Portfolio <span style="font-size:.74rem;color:var(--muted)">(opsional)</span></label>
+                <div class="upload-head">
+                  <label>Upload Portfolio <span style="font-size:.74rem;color:var(--muted)">(opsional)</span></label>
+                  <button type="button" id="porto-del" class="file-remove" hidden>✕ Hapus</button>
+                </div>
                 <div class="file-drop" id="porto-zone">
                   <input type="file" id="porto-file" accept=".pdf,.zip,.rar,.pptx">
                   <span class="file-drop-icon">🗂</span>
@@ -514,12 +515,14 @@ async function init() {
   handleFileDrop(
     document.getElementById('cv-zone'),
     document.getElementById('cv-file'),
-    document.getElementById('cv-chosen')
+    document.getElementById('cv-chosen'),
+    document.getElementById('cv-del')
   );
   handleFileDrop(
     document.getElementById('porto-zone'),
     document.getElementById('porto-file'),
-    document.getElementById('porto-chosen')
+    document.getElementById('porto-chosen'),
+    document.getElementById('porto-del')
   );
 
   // Prefill data pribadi dari akun yang login.

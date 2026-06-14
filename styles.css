@@ -729,6 +729,16 @@ footer{
   background:var(--brand-faint);font-size:.78rem;color:var(--brand);text-align:left;
 }
 .file-chosen.show{display:block}
+.upload-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.upload-head label{margin:0}
+.file-remove{
+  border:1px solid var(--danger,#c62828);border-radius:7px;
+  background:transparent;color:var(--danger,#c62828);
+  font-size:.72rem;font-weight:700;padding:4px 10px;cursor:pointer;
+  transition:background .2s,color .2s;
+}
+.file-remove:hover{background:var(--danger,#c62828);color:#fff}
+.file-remove[hidden]{display:none}
 
 .skills-wrap{
   display:flex;flex-wrap:wrap;gap:6px;

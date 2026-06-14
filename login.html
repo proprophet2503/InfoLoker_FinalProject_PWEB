@@ -54,8 +54,10 @@
 const params = new URLSearchParams(location.search);
 if (params.get('registered')) document.getElementById('note-msg').style.display = 'block';
 
-// Jika sudah login, langsung ke beranda.
-authUtils.ready.then(user => { if (user) window.location.href = 'index.html'; });
+// Jika sudah login, arahkan sesuai peran (HR ke dashboard admin).
+authUtils.ready.then(user => {
+  if (user) window.location.href = user.role === 'perusahaan' ? 'admin.html' : 'index.html';
+});
 
 document.getElementById('form-login').addEventListener('submit', async e => {
   e.preventDefault();

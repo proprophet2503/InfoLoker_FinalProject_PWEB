@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Akun Saya — InfoLoker</title>
+<title>Akun HR — InfoLoker</title>
 <link rel="stylesheet" href="./styles.css">
 <style>
   .acc-wrap { max-width: 640px; margin: 32px auto; padding: 0 20px; }
@@ -26,23 +26,24 @@
 <body>
 <nav class="nav">
   <div class="nav-inner">
-    <a href="index.html" class="logo-mark"><span class="logo-dot"></span>InfoLoker</a>
-    <div class="nav-links">
-      <a href="listings.html">Lowongan</a>
-    </div>
+    <a href="admin.html" class="logo-mark"><span class="logo-dot"></span>InfoLoker</a>
     <div class="nav-auth" id="nav-auth"></div>
   </div>
 </nav>
 
 <div class="acc-wrap">
-  <h1>Akun Saya</h1>
-  <p class="sub">Kelola informasi pribadi akun Anda. <span class="badge-role" id="role-badge"></span></p>
+  <h1>Akun HR</h1>
+  <p class="sub">Kelola akun perusahaan Anda. <span class="badge-role" id="role-badge"></span></p>
 
   <div class="card">
-    <h2>Informasi Pribadi</h2>
+    <h2>Informasi Akun</h2>
     <form id="form-profile">
       <div class="form-group">
-        <label>Nama Lengkap</label>
+        <label>Perusahaan</label>
+        <input type="text" id="perusahaan" readonly>
+      </div>
+      <div class="form-group">
+        <label>Nama Kontak / PIC</label>
         <input type="text" id="nama" required>
       </div>
       <div class="form-group">
@@ -85,11 +86,11 @@ function show(el, text, ok) {
 }
 
 (async function () {
-  const user = await authUtils.requireAuth();
+  // Halaman khusus HR perusahaan. Pelamar diarahkan ke akun pelamar.
+  const user = await authUtils.requireAuth('perusahaan');
   if (!user) return;
-  // Halaman akun ini khusus pelamar. HR perusahaan punya halaman sendiri.
-  if (user.role === 'perusahaan') { window.location.replace('admin-account.html'); return; }
 
+  document.getElementById('perusahaan').value = user.nama_perusahaan || '—';
   document.getElementById('nama').value = user.nama || '';
   document.getElementById('email').value = user.email || '';
   document.getElementById('no_hp').value = user.no_hp || '';

@@ -52,12 +52,15 @@
       <button class="btn-primary" type="submit" id="submit-btn">Daftar Sekarang</button>
     </form>
     <div class="auth-footer">Sudah punya akun? <a href="login.html">Masuk</a></div>
+    <div class="auth-footer" style="margin-top:8px;font-size:.8rem">Pendaftaran hanya untuk pelamar. Akun HR/perusahaan disiapkan oleh admin.</div>
   </div>
 </div>
 <script src="./api.js"></script>
 <script src="./auth.js"></script>
 <script>
-authUtils.ready.then(user => { if (user) window.location.href = 'index.html'; });
+authUtils.ready.then(user => {
+  if (user) window.location.href = user.role === 'perusahaan' ? 'admin.html' : 'index.html';
+});
 
 document.getElementById('form-register').addEventListener('submit', async e => {
   e.preventDefault();

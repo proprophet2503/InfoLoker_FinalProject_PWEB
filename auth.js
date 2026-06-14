@@ -62,10 +62,14 @@
     document.querySelectorAll('.nav-auth').forEach(el => {
       if (currentUser) {
         const initial = escapeHtml((currentUser.nama || '?').charAt(0).toUpperCase());
-        const dashLink = currentUser.role === 'pelamar'
-          ? `<a href="dashboard.html">Dashboard</a>`
-          : (currentUser.role === 'perusahaan'
-            ? `<a href="admin.html">Dashboard HR</a>` : '');
+        // Dropdown berbeda per peran:
+        // - pelamar : Akun Saya | Dashboard | Keluar
+        // - perusahaan (HR): Dashboard HR | Keluar  ← tanpa "Akun Saya"
+        const isHR = currentUser.role === 'perusahaan';
+        const menuItems = isHR
+          ? `<a href="admin.html">Dashboard HR</a>`
+          : `<a href="account.html">Akun Saya</a>
+              ${currentUser.role === 'pelamar' ? '<a href="dashboard.html">Dashboard</a>' : ''}`;
         el.innerHTML = `
           <div class="na-menu">
             <button class="na-trigger" type="button" aria-haspopup="true" aria-expanded="false">
@@ -78,8 +82,7 @@
                 <strong>${escapeHtml(currentUser.nama)}</strong>
                 <span>${escapeHtml(currentUser.email)}</span>
               </div>
-              <a href="account.html">Akun Saya</a>
-              ${dashLink}
+              ${menuItems}
               <button type="button" class="na-logout">Keluar</button>
             </div>
           </div>`;

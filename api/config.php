@@ -14,10 +14,12 @@
  */
 
 // ---- Kredensial database (WAJIB DIISI) ------------------------------
-define('DB_HOST', 'sqlXXX.infinityfree.com');
-define('DB_NAME', ' if0_42168361_XXX');
-define('DB_USER', 'if0_42168361');
-define('DB_PASS', 'jeremyloveseif');
+// GANTI keempat nilai di bawah dengan yang PERSIS dari vPanel > "MySQL Databases".
+// JANGAN ada spasi di depan/belakang. DB_HOST bukan "localhost", bukan "sqlXXX".
+define('DB_HOST', 'sqlXXX.infinityfree.com');     // contoh: sql208.infinityfree.com
+define('DB_NAME', 'if0_42168361_infoloker');      // contoh: if0_42168361_infoloker (TANPA spasi)
+define('DB_USER', 'if0_42168361');                // user MySQL InfinityFree kamu
+define('DB_PASS', 'jeremyloveseif');              // password MySQL dari vPanel (bukan password login akun)
 define('DB_CHARSET', 'utf8mb4');
 
 // ---- Pengaturan aplikasi --------------------------------------------
